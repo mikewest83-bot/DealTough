@@ -35,14 +35,17 @@
   .err { color: var(--bad); margin-top: 10px; font-size: 14px; white-space: pre-wrap; }
   .muted { color: var(--dim); font-size: 13px; }
   /* result */
-  .scorebar { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-  .score { font-size: 52px; font-weight: 800; line-height: 1; }
-  .verdict { font-size: 20px; font-weight: 700; }
-  .sub { color: var(--dim); font-size: 13px; margin-top: 2px; }
-  .prices { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 16px; }
+  .headline { text-align: center; padding: 4px 0 18px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .verdict-big { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; }
+  .scoreline { font-size: 15px; font-weight: 600; margin-top: 4px; }
+  .scoreline b { font-size: 17px; }
+  .sub { color: var(--dim); font-size: 13px; margin-top: 8px; }
+  .prices { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
   .price { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .price.hero { border-color: var(--accent); }
   .price b { display: block; font-size: 18px; }
   .price span { font-size: 12px; color: var(--dim); }
+  .more-numbers { margin-top: 10px; }
   .bars { margin-top: 16px; }
   .bar { display: grid; grid-template-columns: 92px 1fr 46px; gap: 8px; align-items: center; margin: 5px 0; font-size: 13px; }
   .track { background: var(--panel2); border-radius: 6px; height: 8px; overflow: hidden; }
@@ -269,22 +272,26 @@ function renderResult(data) {
     return `<div class="bar"><span>${BAR_LABEL[k]}</span><div class="track"><div class="fill" style="width:${(v / max) * 100}%"></div></div><span>${v}/${max}</span></div>`;
   }).join("");
 
+  const askingPrice = data.extracted.askingPrice;
+  const color = verdictColor(r.verdict);
+
   $("result").innerHTML = `
-    <div class="scorebar">
-      <div class="score" style="color:${verdictColor(r.verdict)}">${r.dealScore}</div>
-      <div>
-        <div class="verdict" style="color:${verdictColor(r.verdict)}">${esc(r.verdict)}</div>
-        <div class="sub">${esc(data.extracted.title)} · risk: ${esc(r.riskLevel)} · confidence ${r.confidencePercent}%
-          · comps: ${data.comparablesCount} (${esc(data.comparablesSource)})</div>
-      </div>
+    <div class="headline">
+      <div class="verdict-big" style="color:${color}">${esc(r.verdict)}</div>
+      <div class="scoreline" style="color:${color}">Deal Score <b>${r.dealScore}</b>/100</div>
+      <div class="sub">${esc(data.extracted.title)} · risk: ${esc(r.riskLevel)} · confidence ${r.confidencePercent}%
+        · comps: ${data.comparablesCount} (${esc(data.comparablesSource)})</div>
     </div>
     <div class="prices">
-      <div class="price"><span>Fair market value</span><b>${money(r.fairMarketValue)}</b></div>
-      <div class="price"><span>Opening offer</span><b>${money(r.openingOffer)}</b></div>
+      <div class="price hero"><span>Fair market value</span><b>${money(r.fairMarketValue)}</b></div>
+      <div class="price hero"><span>Asking price</span><b>${askingPrice != null ? money(askingPrice) : "—"}</b></div>
+      <div class="price hero"><span>Estimated savings</span><b>${money(r.estimatedSavings)}</b></div>
+      <div class="price hero"><span>Recommended offer</span><b>${money(r.openingOffer)}</b></div>
+      <div class="price hero"><span>Walk-away price</span><b>${money(r.walkAwayPrice)}</b></div>
+    </div>
+    <div class="prices more-numbers">
       <div class="price"><span>Target price</span><b>${money(r.targetPrice)}</b></div>
-      <div class="price"><span>Walk away above</span><b>${money(r.walkAwayPrice)}</b></div>
       <div class="price"><span>True cost</span><b>${money(r.trueCost)}</b></div>
-      <div class="price"><span>Est. savings</span><b>${money(r.estimatedSavings)}</b></div>
     </div>
     <div class="bars">${bars}</div>
     <h3>Why</h3><ul>${r.reasons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
@@ -353,7 +360,7 @@ async function analyzeManual() {
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   renderResult({
     recommendation: data,
-    extracted: { title },
+    extracted: { title, askingPrice },
     comparablesCount: comparables.length,
     comparablesSource: "manual",
     warnings: [],
@@ -401,7 +408,7 @@ async function loadHistory() {
         const d = await res.json();
         renderResult({
           recommendation: d.recommendation,
-          extracted: { title: d.title },
+          extracted: { title: d.title, askingPrice: d.askingPrice },
           comparablesCount: "–",
           comparablesSource: "saved",
           warnings: [],

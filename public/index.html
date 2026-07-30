@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DealTough — Know before you buy</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #171c24; --panel2: #1e2530; --line: #2a3342;
+    --text: #e6ebf2; --dim: #8a95a5; --accent: #4f8ef7;
+    --good: #3ecf8e; --warn: #f5b942; --bad: #f4645f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 24px 16px 80px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  h1 { font-size: 26px; letter-spacing: -0.5px; }
+  h1 span { color: var(--accent); }
+  .tag { color: var(--dim); font-size: 13px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  label { display: block; font-size: 13px; color: var(--dim); margin: 12px 0 4px; }
+  textarea, select, input[type=password] {
+    width: 100%; background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px 12px; font: inherit;
+  }
+  textarea { min-height: 140px; resize: vertical; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 200px; }
+  button {
+    background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+    padding: 11px 22px; font: inherit; font-weight: 600; cursor: pointer; margin-top: 14px;
+  }
+  button:disabled { opacity: 0.5; cursor: wait; }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--dim); padding: 6px 12px; font-size: 13px; margin-top: 8px; }
+  .err { color: var(--bad); margin-top: 10px; font-size: 14px; white-space: pre-wrap; }
+  .muted { color: var(--dim); font-size: 13px; }
+  /* result */
+  .scorebar { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .score { font-size: 52px; font-weight: 800; line-height: 1; }
+  .verdict { font-size: 20px; font-weight: 700; }
+  .sub { color: var(--dim); font-size: 13px; margin-top: 2px; }
+  .prices { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 16px; }
+  .price { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .price b { display: block; font-size: 18px; }
+  .price span { font-size: 12px; color: var(--dim); }
+  .bars { margin-top: 16px; }
+  .bar { display: grid; grid-template-columns: 92px 1fr 46px; gap: 8px; align-items: center; margin: 5px 0; font-size: 13px; }
+  .track { background: var(--panel2); border-radius: 6px; height: 8px; overflow: hidden; }
+  .fill { background: var(--accent); height: 100%; }
+  ul { margin: 6px 0 0 18px; }
+  li { margin: 3px 0; }
+  .msg { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-top: 8px; font-size: 14px; white-space: pre-wrap; }
+  .warnings li { color: var(--warn); }
+  .risks li { color: var(--bad); }
+  h3 { font-size: 15px; margin-top: 18px; }
+  /* history */
+  .deal-item { display: flex; justify-content: space-between; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .deal-item:hover { background: var(--panel2); }
+  .deal-item:last-child { border-bottom: 0; }
+  .pill { border-radius: 20px; padding: 2px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; align-self: center; }
+  .hidden { display: none; }
+  .keyrow { display: flex; gap: 8px; align-items: center; }
+  .keyrow input { flex: 1; }
+  .keyrow button { margin-top: 0; padding: 9px 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Deal<span>Tough</span></h1>
+    <div class="tag">Know the real value. Negotiate with confidence.</div>
+  </header>
+
+  <div class="card" id="keyCard">
+    <label for="apiKey">API key</label>
+    <div class="keyrow">
+      <input type="password" id="apiKey" placeholder="Paste your DealTough API key" autocomplete="off">
+      <button id="saveKey">Save</button>
+    </div>
+    <div class="muted" style="margin-top:6px">Stored only in this browser.</div>
+  </div>
+
+  <div class="card">
+    <label for="rawText">Paste the listing</label>
+    <textarea id="rawText" placeholder="Copy the marketplace listing here — title, price, description, anything the seller wrote."></textarea>
+    <div class="row">
+      <div>
+        <label for="category">Category</label>
+        <select id="category">
+          <option value="">Auto-detect</option>
+          <option value="vehicle">Vehicle</option>
+          <option value="electronics">Electronics</option>
+          <option value="tools">Tools</option>
+          <option value="furniture">Furniture</option>
+          <option value="outdoor_equipment">Outdoor equipment</option>
+        </select>
+      </div>
+      <div>
+        <label for="photos">Photos (optional)</label>
+        <input type="file" id="photos" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+      </div>
+    </div>
+    <button id="analyze">Analyze this deal</button>
+    <div class="err hidden" id="error"></div>
+  </div>
+
+  <div class="card hidden" id="result"></div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0">DealVault — past analyses</h3>
+      <button class="ghost" id="refreshHistory">Refresh</button>
+    </div>
+    <div id="history" class="muted" style="margin-top:8px">Loading…</div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const KEY_STORAGE = "dealtough_api_key";
+
+function apiKey() { return localStorage.getItem(KEY_STORAGE) || ""; }
+function headers() {
+  const h = { "Content-Type": "application/json" };
+  const k = apiKey();
+  if (k) h["X-Api-Key"] = k;
+  return h;
+}
+
+$("apiKey").value = apiKey();
+$("saveKey").onclick = () => {
+  localStorage.setItem(KEY_STORAGE, $("apiKey").value.trim());
+  loadHistory();
+};
+
+function verdictColor(verdict) {
+  if (/Walk Away|High Risk/.test(verdict)) return "var(--bad)";
+  if (/Fair/.test(verdict)) return "var(--warn)";
+  return "var(--good)";
+}
+const money = (n) => "$" + Number(n).toLocaleString();
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+function readPhotos() {
+  const files = [...$("photos").files];
+  const oversize = files.find((f) => f.size > 4 * 1024 * 1024);
+  if (oversize) throw new Error(`Photo "${oversize.name}" is over 4 MB — please use a smaller image.`);
+  return Promise.all(files.map((f) => new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve({ base64: r.result.split(",")[1], mediaType: f.type });
+    r.onerror = reject;
+    r.readAsDataURL(f);
+  })));
+}
+
+const BAR_MAX = { value: 35, risk: 20, trueCost: 15, negotiation: 10, market: 10, confidence: 10 };
+const BAR_LABEL = { value: "Value", risk: "Risk", trueCost: "True cost", negotiation: "Negotiation", market: "Market", confidence: "Confidence" };
+
+function renderResult(data) {
+  const r = data.recommendation;
+  const bars = Object.keys(BAR_MAX).map((k) => {
+    const v = r.breakdown[k] ?? 0, max = BAR_MAX[k];
+    return `<div class="bar"><span>${BAR_LABEL[k]}</span><div class="track"><div class="fill" style="width:${(v / max) * 100}%"></div></div><span>${v}/${max}</span></div>`;
+  }).join("");
+
+  $("result").innerHTML = `
+    <div class="scorebar">
+      <div class="score" style="color:${verdictColor(r.verdict)}">${r.dealScore}</div>
+      <div>
+        <div class="verdict" style="color:${verdictColor(r.verdict)}">${esc(r.verdict)}</div>
+        <div class="sub">${esc(data.extracted.title)} · risk: ${esc(r.riskLevel)} · confidence ${r.confidencePercent}%
+          · comps: ${data.comparablesCount} (${esc(data.comparablesSource)})</div>
+      </div>
+    </div>
+    <div class="prices">
+      <div class="price"><span>Fair market value</span><b>${money(r.fairMarketValue)}</b></div>
+      <div class="price"><span>Opening offer</span><b>${money(r.openingOffer)}</b></div>
+      <div class="price"><span>Target price</span><b>${money(r.targetPrice)}</b></div>
+      <div class="price"><span>Walk away above</span><b>${money(r.walkAwayPrice)}</b></div>
+      <div class="price"><span>True cost</span><b>${money(r.trueCost)}</b></div>
+      <div class="price"><span>Est. savings</span><b>${money(r.estimatedSavings)}</b></div>
+    </div>
+    <div class="bars">${bars}</div>
+    <h3>Why</h3><ul>${r.reasons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    <h3>Top risks</h3><ul class="risks">${r.topRisks.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    <h3>Ask the seller</h3><ul>${r.sellerQuestions.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    <h3>Suggested message</h3>
+    <div class="msg" id="negMsg">${esc(r.negotiationMessage)}</div>
+    <button class="ghost" id="copyMsg">Copy message</button>
+    ${data.warnings?.length ? `<h3>Notes</h3><ul class="warnings">${data.warnings.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    ${r.assumptions?.length ? `<ul class="muted" style="margin-top:10px">${r.assumptions.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+  `;
+  $("result").classList.remove("hidden");
+  $("copyMsg").onclick = () => navigator.clipboard.writeText(r.negotiationMessage);
+  $("result").scrollIntoView({ behavior: "smooth" });
+}
+
+$("analyze").onclick = async () => {
+  $("error").classList.add("hidden");
+  const rawText = $("rawText").value.trim();
+  if (!rawText) return showError("Paste a listing first.");
+  $("analyze").disabled = true;
+  $("analyze").textContent = "Analyzing…";
+  try {
+    const photos = await readPhotos();
+    const body = { rawText };
+    if (photos.length) body.photos = photos;
+    if ($("category").value) body.categoryOverride = $("category").value;
+    const res = await fetch("/api/v1/deals/from-listing", { method: "POST", headers: headers(), body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    renderResult(data);
+    loadHistory();
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    $("analyze").disabled = false;
+    $("analyze").textContent = "Analyze this deal";
+  }
+};
+
+function showError(msg) {
+  $("error").textContent = msg;
+  $("error").classList.remove("hidden");
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch("/api/v1/deals?limit=15", { headers: headers() });
+    if (res.status === 401) { $("history").textContent = "Enter your API key above to see saved deals."; return; }
+    if (res.status === 503) { $("history").textContent = "Persistence is not configured."; return; }
+    if (!res.ok) throw new Error();
+    const deals = await res.json();
+    if (!deals.length) { $("history").textContent = "No deals analyzed yet."; return; }
+    $("history").innerHTML = deals.map((d) => {
+      const r = d.recommendation || {};
+      return `<div class="deal-item" data-id="${esc(d.id)}">
+        <div><b>${esc(d.title)}</b><div class="muted">${esc(d.category)} · asking ${money(d.askingPrice)} · ${new Date(d.createdAt).toLocaleString()}</div></div>
+        <span class="pill" style="background:${verdictColor(r.verdict || "")};color:#0e1116">${r.dealScore ?? "?"} · ${esc(r.verdict || "")}</span>
+      </div>`;
+    }).join("");
+    [...document.querySelectorAll(".deal-item")].forEach((el) => {
+      el.onclick = async () => {
+        const res = await fetch(`/api/v1/deals/${el.dataset.id}`, { headers: headers() });
+        if (!res.ok) return;
+        const d = await res.json();
+        renderResult({
+          recommendation: d.recommendation,
+          extracted: { title: d.title },
+          comparablesCount: "–",
+          comparablesSource: "saved",
+          warnings: [],
+        });
+      };
+    });
+  } catch {
+    $("history").textContent = "Couldn't load history.";
+  }
+}
+loadHistory();
+</script>
+</body>
+</html>

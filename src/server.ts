@@ -1,4 +1,8 @@
 import express from "express";
+import type { NextFunction, Request, Response } from "express";
+import { timingSafeEqual } from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { analyzeDeal } from "./engine.js";
 import type { Comparable, DealCategory, DealInput } from "./types.js";
 import { isAnthropicConfigured, isDbConfigured, isEbayConfigured } from "./env.js";
@@ -18,10 +22,65 @@ function isValidCategory(value: unknown): value is DealCategory {
   return typeof value === "string" && (VALID_CATEGORIES as string[]).includes(value);
 }
 
+// ── auth ────────────────────────────────────────────────────────────────
+// Single shared API key from DEALTOUGH_API_KEY. When unset the protected
+// routes stay open (same degrade-without-crashing posture as the other
+// credentials); set it in production.
+function requireApiKey(req: Request, res: Response, next: NextFunction): void {
+  const configured = process.env.DEALTOUGH_API_KEY;
+  if (!configured) {
+    next();
+    return;
+  }
+  const provided = Buffer.from(req.get("x-api-key") ?? "");
+  const expected = Buffer.from(configured);
+  if (provided.length === expected.length && timingSafeEqual(provided, expected)) {
+    next();
+    return;
+  }
+  res.status(401).json({ error: "Missing or invalid API key" });
+}
+
+// ── rate limiting ───────────────────────────────────────────────────────
+// In-memory per-IP window; assumes a single instance, same tradeoff as the
+// in-memory eBay token cache. Applied to the route that spends money.
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimit(max: number, windowMs: number) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const key = req.ip ?? "unknown";
+    const now = Date.now();
+    const bucket = rateBuckets.get(key);
+    if (!bucket || bucket.resetAt <= now) {
+      rateBuckets.set(key, { count: 1, resetAt: now + windowMs });
+      next();
+      return;
+    }
+    bucket.count += 1;
+    if (bucket.count > max) {
+      res.status(429).json({ error: "Too many requests — try again shortly" });
+      return;
+    }
+    next();
+  };
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of rateBuckets) {
+    if (bucket.resetAt <= now) rateBuckets.delete(key);
+  }
+}, 10 * 60 * 1000).unref();
+
 const app = express();
+app.set("trust proxy", 1); // Railway edge proxy — makes req.ip the real client IP
 app.use(express.json({ limit: "25mb" }));
 
-app.get("/", (_req, res) => {
+// Web UI (public/index.html) at /; JSON health check moved to /health.
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+app.use(express.static(path.resolve(currentDir, "../../public")));
+
+app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true, engineVersion: "DTE-1.0" });
 });
 
@@ -35,8 +94,7 @@ app.post("/api/v1/deals/analyze", (req, res) => {
   }
 });
 
-// TODO: add auth before this handles real user data — this repo has no auth system yet.
-app.post("/api/v1/deals/from-listing", async (req, res) => {
+app.post("/api/v1/deals/from-listing", requireApiKey, rateLimit(6, 60_000), async (req, res) => {
   if (!isAnthropicConfigured()) {
     res.status(503).json({ error: "Listing extraction is not configured" });
     return;
@@ -169,7 +227,7 @@ app.post("/api/v1/deals/from-listing", async (req, res) => {
 
 // Express 4 does not catch async throws — an unhandled rejection kills the
 // process — so every await in these handlers stays inside try/catch.
-app.get("/api/v1/deals/:id", async (req, res) => {
+app.get("/api/v1/deals/:id", requireApiKey, async (req, res) => {
   if (!isDbConfigured()) {
     res.status(503).json({ error: "Persistence is not configured" });
     return;
@@ -187,7 +245,7 @@ app.get("/api/v1/deals/:id", async (req, res) => {
   }
 });
 
-app.get("/api/v1/deals", async (req, res) => {
+app.get("/api/v1/deals", requireApiKey, async (req, res) => {
   if (!isDbConfigured()) {
     res.status(503).json({ error: "Persistence is not configured" });
     return;

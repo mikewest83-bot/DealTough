@@ -6,9 +6,14 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "dev": "tsx examples/run-example.ts"
+    "dev": "tsx examples/run-example.ts",
+    "start": "node dist/src/api-example.js"
+  },
+  "dependencies": {
+    "express": "^4.21.1"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@types/node": "^22.10.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.2",

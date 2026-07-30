@@ -92,7 +92,7 @@
   }
   .tab:hover { border-color: var(--accent); color: var(--text); }
   .tab.active { background: var(--panel2); color: var(--text); border-color: var(--accent); }
-  input[type=text], input[type=number] {
+  input[type=text], input[type=number], input[type=email] {
     width: 100%; background: var(--panel2); color: var(--text); border: 1px solid var(--line);
     border-radius: 8px; padding: 10px 12px; font: inherit;
   }
@@ -114,8 +114,47 @@
   <header>
     <h1>Deal<span>Tough</span></h1>
     <div class="tag">Before you buy it, know what it's really worth.</div>
-    <div class="trust">Free to use · <span>no account, no signup</span></div>
+    <div class="trust">Manual scoring is always free · <span>no account needed</span></div>
   </header>
+
+  <div class="card" id="authCard">
+    <div id="authLoggedOut">
+      <div class="tabs">
+        <button class="tab active" id="authTabLogin">Sign in</button>
+        <button class="tab" id="authTabRegister">Create account</button>
+      </div>
+      <div id="authLoginForm">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" autocomplete="email">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" autocomplete="current-password">
+        <button id="loginBtn">Sign in</button>
+      </div>
+      <div id="authRegisterForm" class="hidden">
+        <label for="registerEmail">Email</label>
+        <input type="email" id="registerEmail" autocomplete="email">
+        <label for="registerPassword">Password (8+ characters)</label>
+        <input type="password" id="registerPassword" autocomplete="new-password">
+        <button id="registerBtn">Create account — get 2 free credits</button>
+      </div>
+      <div class="err hidden" id="authError"></div>
+      <div class="muted" style="margin-top:8px">An account is only needed for "Paste listing" — Manual entry never requires one.</div>
+    </div>
+    <div id="authLoggedIn" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <div id="authEmail" style="font-weight:600"></div>
+          <div class="muted"><span id="authCredits">0</span> credits</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="buyCreditsBtn" style="margin-top:0">Buy credits</button>
+          <button class="ghost" id="logoutBtn" style="margin-top:0">Sign out</button>
+        </div>
+      </div>
+      <div id="packsArea" class="hidden" style="margin-top:14px"></div>
+    </div>
+    <div class="muted hidden" id="checkoutNotice" style="margin-top:10px"></div>
+  </div>
 
   <div class="card">
     <div class="tabs">
@@ -226,6 +265,110 @@ function verdictColor(verdict) {
 }
 const money = (n) => "$" + Number(n).toLocaleString();
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+// ── auth + billing ──────────────────────────────────────────────────────
+// Session lives in an httpOnly cookie the browser sends automatically on
+// same-origin requests — no token handling here at all.
+let currentUser = null; // { email, creditBalance } | null
+
+function showAuthError(msg) {
+  $("authError").textContent = msg;
+  $("authError").classList.remove("hidden");
+}
+
+function renderAuthState() {
+  $("authLoggedOut").classList.toggle("hidden", Boolean(currentUser));
+  $("authLoggedIn").classList.toggle("hidden", !currentUser);
+  if (currentUser) {
+    $("authEmail").textContent = currentUser.email;
+    $("authCredits").textContent = currentUser.creditBalance;
+  }
+}
+
+async function refreshAuth() {
+  const res = await fetch("/api/auth/me");
+  currentUser = res.ok ? await res.json() : null;
+  renderAuthState();
+  return currentUser;
+}
+
+$("authTabLogin").onclick = () => {
+  $("authTabLogin").classList.add("active");
+  $("authTabRegister").classList.remove("active");
+  $("authLoginForm").classList.remove("hidden");
+  $("authRegisterForm").classList.add("hidden");
+  $("authError").classList.add("hidden");
+};
+$("authTabRegister").onclick = () => {
+  $("authTabRegister").classList.add("active");
+  $("authTabLogin").classList.remove("active");
+  $("authRegisterForm").classList.remove("hidden");
+  $("authLoginForm").classList.add("hidden");
+  $("authError").classList.add("hidden");
+};
+
+$("loginBtn").onclick = async () => {
+  $("authError").classList.add("hidden");
+  const email = $("loginEmail").value.trim();
+  const password = $("loginPassword").value;
+  const res = await fetch("/api/auth/login", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ email, password }) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { showAuthError(data.error || "Sign in failed"); return; }
+  currentUser = data;
+  renderAuthState();
+  loadHistory();
+};
+
+$("registerBtn").onclick = async () => {
+  $("authError").classList.add("hidden");
+  const email = $("registerEmail").value.trim();
+  const password = $("registerPassword").value;
+  const res = await fetch("/api/auth/register", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ email, password }) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { showAuthError(data.error || "Could not create account"); return; }
+  currentUser = data;
+  renderAuthState();
+  loadHistory();
+};
+
+$("logoutBtn").onclick = async () => {
+  await fetch("/api/auth/logout", { method: "POST" });
+  currentUser = null;
+  $("packsArea").classList.add("hidden");
+  renderAuthState();
+};
+
+$("buyCreditsBtn").onclick = async () => {
+  const area = $("packsArea");
+  if (!area.classList.contains("hidden")) { area.classList.add("hidden"); return; }
+  const res = await fetch("/api/billing/packs");
+  const packs = await res.json().catch(() => []);
+  area.innerHTML = packs.map((p) =>
+    `<button type="button" class="ghost" data-pack="${esc(p.id)}" style="margin-top:0;margin-right:8px">${esc(p.label)}</button>`
+  ).join("") || `<span class="muted">Buying credits isn't available on this deployment yet.</span>`;
+  area.classList.remove("hidden");
+  [...area.querySelectorAll("button[data-pack]")].forEach((btn) => {
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const res = await fetch("/api/billing/checkout", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ packId: btn.dataset.pack }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showAuthError(data.error || "Could not start checkout"); btn.disabled = false; return; }
+      window.location.href = data.url;
+    };
+  });
+};
+
+async function handleCheckoutReturn() {
+  const params = new URLSearchParams(location.search);
+  const status = params.get("checkout");
+  if (!status) return;
+  const notice = $("checkoutNotice");
+  notice.textContent = status === "success"
+    ? "Payment received — credits added to your account."
+    : "Checkout canceled — no charge was made.";
+  notice.classList.remove("hidden");
+  history.replaceState(null, "", location.pathname);
+}
 
 // Photos can arrive via the file picker (phone camera/library or computer
 // file browser), pasted from the clipboard (Ctrl/Cmd+V — screenshots too),
@@ -366,8 +509,11 @@ async function analyzePaste() {
   if ($("category").value) body.categoryOverride = $("category").value;
   const res = await fetch("/api/v1/deals/from-listing", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) throw new Error("Sign in above to analyze a pasted listing — Manual entry stays free without an account.");
+  if (res.status === 402) throw new Error("Out of credits — use \"Buy credits\" above to keep analyzing pasted listings.");
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   renderResult(data);
+  refreshAuth(); // credit balance just changed
   loadHistory();
 }
 
@@ -455,6 +601,8 @@ async function loadHistory() {
     $("history").textContent = "Couldn't load history.";
   }
 }
+refreshAuth();
+handleCheckoutReturn();
 loadHistory();
 </script>
 </body>

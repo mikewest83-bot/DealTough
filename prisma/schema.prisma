@@ -22,5 +22,31 @@ model Deal {
   source         String  @default("from-listing")
   rawListingText String?
 
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
   @@index([createdAt])
+}
+
+model User {
+  id            String              @id @default(cuid())
+  email         String              @unique
+  passwordHash  String
+  creditBalance Int                 @default(0)
+  createdAt     DateTime            @default(now())
+
+  deals         Deal[]
+  transactions  CreditTransaction[]
+}
+
+model CreditTransaction {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  delta           Int
+  reason          String // "purchase" | "consumption" | "signup_bonus"
+  stripeSessionId String?  @unique
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
 }

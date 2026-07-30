@@ -167,17 +167,24 @@ app.post("/api/v1/deals/from-listing", async (req, res) => {
   });
 });
 
+// Express 4 does not catch async throws — an unhandled rejection kills the
+// process — so every await in these handlers stays inside try/catch.
 app.get("/api/v1/deals/:id", async (req, res) => {
   if (!isDbConfigured()) {
     res.status(503).json({ error: "Persistence is not configured" });
     return;
   }
-  const deal = await getPrisma().deal.findUnique({ where: { id: req.params.id } });
-  if (!deal) {
-    res.status(404).json({ error: "Deal not found" });
-    return;
+  try {
+    const deal = await getPrisma().deal.findUnique({ where: { id: req.params.id } });
+    if (!deal) {
+      res.status(404).json({ error: "Deal not found" });
+      return;
+    }
+    res.status(200).json(deal);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Database error";
+    res.status(500).json({ error: message });
   }
-  res.status(200).json(deal);
 });
 
 app.get("/api/v1/deals", async (req, res) => {
@@ -185,14 +192,19 @@ app.get("/api/v1/deals", async (req, res) => {
     res.status(503).json({ error: "Persistence is not configured" });
     return;
   }
-  const limit = Math.min(Number(req.query.limit) || 20, 100);
-  const offset = Number(req.query.offset) || 0;
-  const deals = await getPrisma().deal.findMany({
-    orderBy: { createdAt: "desc" },
-    take: limit,
-    skip: offset,
-  });
-  res.status(200).json(deals);
+  try {
+    const limit = Math.min(Number(req.query.limit) || 20, 100);
+    const offset = Number(req.query.offset) || 0;
+    const deals = await getPrisma().deal.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
+    });
+    res.status(200).json(deals);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Database error";
+    res.status(500).json({ error: message });
+  }
 });
 
 const port = Number(process.env.PORT) || 4000;

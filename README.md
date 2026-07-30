@@ -1,26 +1,41 @@
-# DealTough Intelligence Engine — Phase 1
+# DealTough
 
 **Mission:** Help users avoid bad purchases, understand true value, save money, and negotiate confidently.
 
-This package contains the first working implementation of the DealTough decision engine.
+Paste a marketplace listing (text + photos), get back a 100-point Deal Score with price
+targets, risk flags, and a copy-ready negotiation message. Live at
+`https://dealtough-production.up.railway.app` (web UI at `/`).
 
-## What is included
+## Architecture
 
-- 100-point Deal Score
-- Category-aware market valuation
-- True-cost calculation
-- Protective risk overrides
-- Negotiation leverage scoring
-- Market-demand scoring
-- Confidence scoring
-- Opening offer, target price, and walk-away price
-- Seller questions
-- Personalized negotiation message
-- Explainable score breakdown
-- Unit tests
-- Example REST endpoint
+| Layer | What it does | Credential |
+|---|---|---|
+| Web UI (`public/index.html`) | Paste listing → results + DealVault history | API key (browser-stored) |
+| Extraction (`src/extract.ts`) | Claude reads listing text/photos → structured fields + risk signals | `ANTHROPIC_API_KEY` |
+| Comparables (`src/ebay.ts`) | eBay Browse API active-listing prices (labeled `ebay_active`, not sold comps) | `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` |
+| Engine (`src/engine.ts`) | Deterministic DTE-1.0 scoring — pure, no I/O | none |
+| DealVault (`prisma/`, `src/db.ts`) | Persists every analysis to Postgres | `DATABASE_URL` |
 
-## Official score weights
+Every capability degrades independently when its credential is missing — the server
+always boots, and unaffected routes keep working.
+
+## API
+
+All routes are JSON. Routes marked 🔑 require the `X-Api-Key` header
+(`DEALTOUGH_API_KEY`; if the env var is unset, they're open).
+
+```http
+GET  /health                       → { ok, engineVersion }
+POST /api/v1/deals/analyze         → DealRecommendation (caller supplies full DealInput)
+POST /api/v1/deals/from-listing 🔑 → full pipeline: { rawText, photos?, categoryOverride? }
+GET  /api/v1/deals 🔑              → recent analyses (limit ≤ 100, offset)
+GET  /api/v1/deals/:id 🔑          → one saved analysis
+```
+
+`from-listing` is rate-limited (6/min per IP) since it spends Anthropic tokens.
+Photos are base64 (`{ base64, mediaType }`), ≤ 4 MB each, jpeg/png/gif/webp.
+
+## Score weights
 
 | Component | Maximum |
 |---|---:|
@@ -45,34 +60,40 @@ This package contains the first working implementation of the DealTough decision
 
 ### Protective rule
 
-A critical risk caps the score at 39 and forces **Walk Away**.  
+A critical risk caps the score at 39 and forces **Walk Away**.
 A high-risk result is capped at 59. Cheap pricing cannot override serious danger.
 
-## Run it
+## Run it locally
 
 ```bash
 npm install
-npm test
-npm run dev
+npm test        # offline — no credentials needed
+npm run build   # prisma generate + tsc
+npm start       # serves UI + API on :4000
 ```
 
-## Integration
+Environment (all optional locally; the affected feature just switches off):
 
-Import the engine into an existing TypeScript app:
-
-```ts
-import { analyzeDeal } from "@dealtough/intelligence-engine";
-
-const report = analyzeDeal(input);
+```bash
+ANTHROPIC_API_KEY=...    # listing extraction (console.anthropic.com)
+EBAY_CLIENT_ID=...       # comparables (developer.ebay.com production keyset)
+EBAY_CLIENT_SECRET=...
+DATABASE_URL=...         # DealVault (Postgres)
+DEALTOUGH_API_KEY=...    # protects from-listing + DealVault routes
 ```
 
-Or copy the endpoint pattern in `src/api-example.ts`:
+## Deploy (Railway)
 
-```http
-POST /api/v1/deals/analyze
-Content-Type: application/json
-```
+`railway.json` drives the build (`npm install --include=dev && npm run build`) and start
+(`npm start`). Postgres runs as a Railway plugin; `DATABASE_URL` is a reference variable
+on the app service. Migrations run via `prisma migrate deploy` through a **temporary**
+TCP proxy on the Postgres service — always delete the proxy immediately after.
 
-## Important production note
+## Honest limitations
 
-DTE-1.0 is deterministic and explainable. It expects the app's data-collection layer to supply comparable prices, detected risks, listing completeness, hidden costs, and market indicators. The next implementation step is connecting live listing extraction, comparable-data providers, image analysis, authentication, and persistent DealVault storage.
+- eBay comparables are **active listings**, not sold prices — fair-market-value estimates
+  skew slightly high. eBay's sold-comps API (Marketplace Insights) is restricted to
+  approved partners.
+- Category → eBay search mapping is keyword-based, best-effort; generic titles pull
+  noisy comps.
+- Single shared API key, no user accounts. In-memory rate limiting assumes one instance.

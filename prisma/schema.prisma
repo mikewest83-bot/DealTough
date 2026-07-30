@@ -1,0 +1,26 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Deal {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+
+  title          String
+  category       String
+  askingPrice    Float
+  condition      String?
+
+  // Full DealRecommendation from analyzeDeal(), stored as-is.
+  recommendation Json
+
+  source         String  @default("from-listing")
+  rawListingText String?
+
+  @@index([createdAt])
+}

@@ -1,6 +1,5 @@
 import express from "express";
 import type { NextFunction, Request, Response } from "express";
-import { timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { analyzeDeal } from "./engine.js";
@@ -20,25 +19,6 @@ const VALID_CATEGORIES: DealCategory[] = [
 
 function isValidCategory(value: unknown): value is DealCategory {
   return typeof value === "string" && (VALID_CATEGORIES as string[]).includes(value);
-}
-
-// ── auth ────────────────────────────────────────────────────────────────
-// Single shared API key from DEALTOUGH_API_KEY. When unset the protected
-// routes stay open (same degrade-without-crashing posture as the other
-// credentials); set it in production.
-function requireApiKey(req: Request, res: Response, next: NextFunction): void {
-  const configured = process.env.DEALTOUGH_API_KEY;
-  if (!configured) {
-    next();
-    return;
-  }
-  const provided = Buffer.from(req.get("x-api-key") ?? "");
-  const expected = Buffer.from(configured);
-  if (provided.length === expected.length && timingSafeEqual(provided, expected)) {
-    next();
-    return;
-  }
-  res.status(401).json({ error: "Missing or invalid API key" });
 }
 
 // ── rate limiting ───────────────────────────────────────────────────────
@@ -94,7 +74,7 @@ app.post("/api/v1/deals/analyze", (req, res) => {
   }
 });
 
-app.post("/api/v1/deals/from-listing", requireApiKey, rateLimit(6, 60_000), async (req, res) => {
+app.post("/api/v1/deals/from-listing", rateLimit(6, 60_000), async (req, res) => {
   if (!isAnthropicConfigured()) {
     res.status(503).json({ error: "Listing extraction is not configured" });
     return;
@@ -227,7 +207,7 @@ app.post("/api/v1/deals/from-listing", requireApiKey, rateLimit(6, 60_000), asyn
 
 // Express 4 does not catch async throws — an unhandled rejection kills the
 // process — so every await in these handlers stays inside try/catch.
-app.get("/api/v1/deals/:id", requireApiKey, async (req, res) => {
+app.get("/api/v1/deals/:id", async (req, res) => {
   if (!isDbConfigured()) {
     res.status(503).json({ error: "Persistence is not configured" });
     return;
@@ -245,7 +225,7 @@ app.get("/api/v1/deals/:id", requireApiKey, async (req, res) => {
   }
 });
 
-app.get("/api/v1/deals", requireApiKey, async (req, res) => {
+app.get("/api/v1/deals", async (req, res) => {
   if (!isDbConfigured()) {
     res.status(503).json({ error: "Persistence is not configured" });
     return;

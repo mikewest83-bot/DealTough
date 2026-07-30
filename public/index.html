@@ -59,9 +59,6 @@
   .deal-item:last-child { border-bottom: 0; }
   .pill { border-radius: 20px; padding: 2px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; align-self: center; }
   .hidden { display: none; }
-  .keyrow { display: flex; gap: 8px; align-items: center; }
-  .keyrow input { flex: 1; }
-  .keyrow button { margin-top: 0; padding: 9px 16px; }
   .tabs { display: flex; gap: 6px; margin-bottom: 4px; }
   .tab {
     background: transparent; border: 1px solid var(--line); color: var(--dim);
@@ -72,6 +69,17 @@
     width: 100%; background: var(--panel2); color: var(--text); border: 1px solid var(--line);
     border-radius: 8px; padding: 10px 12px; font: inherit;
   }
+  .dropzone {
+    border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px;
+  }
+  .dropzone.drag { border-color: var(--accent); background: var(--panel2); }
+  .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .thumb { position: relative; width: 64px; height: 64px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb button {
+    position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; padding: 0; margin: 0;
+    border-radius: 50%; background: rgba(0,0,0,0.7); font-size: 12px; line-height: 1; color: #fff;
+  }
 </style>
 </head>
 <body>
@@ -80,15 +88,6 @@
     <h1>Deal<span>Tough</span></h1>
     <div class="tag">Know the real value. Negotiate with confidence.</div>
   </header>
-
-  <div class="card" id="keyCard">
-    <label for="apiKey">API key</label>
-    <div class="keyrow">
-      <input type="password" id="apiKey" placeholder="Paste your DealTough API key" autocomplete="off">
-      <button id="saveKey">Save</button>
-    </div>
-    <div class="muted" style="margin-top:6px">Stored only in this browser.</div>
-  </div>
 
   <div class="card">
     <div class="tabs">
@@ -113,7 +112,11 @@
         </div>
         <div>
           <label for="photos">Photos (optional)</label>
-          <input type="file" id="photos" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+          <div class="dropzone" id="dropzone" tabindex="0">
+            <input type="file" id="photos" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+            <div class="muted" style="margin-top:6px">or paste (Ctrl/Cmd+V) — screenshots work too</div>
+          </div>
+          <div class="thumbs" id="thumbs"></div>
         </div>
       </div>
     </div>
@@ -185,21 +188,7 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
-const KEY_STORAGE = "dealtough_api_key";
-
-function apiKey() { return localStorage.getItem(KEY_STORAGE) || ""; }
-function headers() {
-  const h = { "Content-Type": "application/json" };
-  const k = apiKey();
-  if (k) h["X-Api-Key"] = k;
-  return h;
-}
-
-$("apiKey").value = apiKey();
-$("saveKey").onclick = () => {
-  localStorage.setItem(KEY_STORAGE, $("apiKey").value.trim());
-  loadHistory();
-};
+const JSON_HEADERS = { "Content-Type": "application/json" };
 
 function verdictColor(verdict) {
   if (/Walk Away|High Risk/.test(verdict)) return "var(--bad)";
@@ -209,17 +198,66 @@ function verdictColor(verdict) {
 const money = (n) => "$" + Number(n).toLocaleString();
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
-function readPhotos() {
-  const files = [...$("photos").files];
-  const oversize = files.find((f) => f.size > 4 * 1024 * 1024);
-  if (oversize) throw new Error(`Photo "${oversize.name}" is over 4 MB — please use a smaller image.`);
-  return Promise.all(files.map((f) => new Promise((resolve, reject) => {
+// Photos can arrive via the file picker (phone camera/library or computer
+// file browser), pasted from the clipboard (Ctrl/Cmd+V — screenshots too),
+// or dragged onto the dropzone. All three funnel into this one list.
+let attachedPhotos = []; // { base64, mediaType, dataUrl }
+
+function fileToPhoto(file) {
+  return new Promise((resolve, reject) => {
+    if (file.size > 4 * 1024 * 1024) {
+      reject(new Error(`"${file.name || "That image"}" is over 4 MB — use a smaller photo.`));
+      return;
+    }
     const r = new FileReader();
-    r.onload = () => resolve({ base64: r.result.split(",")[1], mediaType: f.type });
-    r.onerror = reject;
-    r.readAsDataURL(f);
-  })));
+    r.onload = () => resolve({ base64: r.result.split(",")[1], mediaType: file.type, dataUrl: r.result });
+    r.onerror = () => reject(new Error("Couldn't read that image."));
+    r.readAsDataURL(file);
+  });
 }
+
+async function addPhotoFiles(fileList) {
+  const files = [...fileList].filter((f) => f.type.startsWith("image/"));
+  for (const file of files) {
+    try {
+      attachedPhotos.push(await fileToPhoto(file));
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+  renderThumbs();
+}
+
+function renderThumbs() {
+  $("thumbs").innerHTML = attachedPhotos.map((p, i) =>
+    `<div class="thumb"><img src="${p.dataUrl}" alt=""><button type="button" data-i="${i}" aria-label="Remove photo">×</button></div>`
+  ).join("");
+  [...document.querySelectorAll(".thumb button")].forEach((btn) => {
+    btn.onclick = () => { attachedPhotos.splice(Number(btn.dataset.i), 1); renderThumbs(); };
+  });
+}
+
+$("photos").onchange = () => { addPhotoFiles($("photos").files); $("photos").value = ""; };
+
+const dropzone = $("dropzone");
+["dragover", "dragenter"].forEach((evt) =>
+  dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add("drag"); }));
+["dragleave", "drop"].forEach((evt) =>
+  dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove("drag"); }));
+dropzone.addEventListener("drop", (e) => {
+  if (e.dataTransfer?.files?.length) addPhotoFiles(e.dataTransfer.files);
+});
+
+document.addEventListener("paste", (e) => {
+  if (mode !== "paste") return;
+  const items = [...(e.clipboardData?.items ?? [])].filter(
+    (item) => item.kind === "file" && item.type.startsWith("image/"),
+  );
+  if (!items.length) return;
+  e.preventDefault();
+  const files = items.map((item) => item.getAsFile()).filter(Boolean);
+  addPhotoFiles(files);
+});
 
 const BAR_MAX = { value: 35, risk: 20, trueCost: 15, negotiation: 10, market: 10, confidence: 10 };
 const BAR_LABEL = { value: "Value", risk: "Risk", trueCost: "True cost", negotiation: "Negotiation", market: "Market", confidence: "Confidence" };
@@ -278,11 +316,12 @@ $("tabManual").onclick = () => setMode("manual");
 async function analyzePaste() {
   const rawText = $("rawText").value.trim();
   if (!rawText) throw new Error("Paste a listing first.");
-  const photos = await readPhotos();
   const body = { rawText };
-  if (photos.length) body.photos = photos;
+  if (attachedPhotos.length) {
+    body.photos = attachedPhotos.map(({ base64, mediaType }) => ({ base64, mediaType }));
+  }
   if ($("category").value) body.categoryOverride = $("category").value;
-  const res = await fetch("/api/v1/deals/from-listing", { method: "POST", headers: headers(), body: JSON.stringify(body) });
+  const res = await fetch("/api/v1/deals/from-listing", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   renderResult(data);
@@ -309,7 +348,7 @@ async function analyzeManual() {
   if (days > 0) body.daysListed = days;
   const extra = Number($("mExtra").value);
   if (extra > 0) body.hiddenCosts = [{ label: "Expected extra costs", amount: extra }];
-  const res = await fetch("/api/v1/deals/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const res = await fetch("/api/v1/deals/analyze", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   renderResult({
@@ -343,8 +382,7 @@ function showError(msg) {
 
 async function loadHistory() {
   try {
-    const res = await fetch("/api/v1/deals?limit=15", { headers: headers() });
-    if (res.status === 401) { $("history").textContent = "Enter your API key above to see saved deals."; return; }
+    const res = await fetch("/api/v1/deals?limit=15");
     if (res.status === 503) { $("history").textContent = "Persistence is not configured."; return; }
     if (!res.ok) throw new Error();
     const deals = await res.json();
@@ -358,7 +396,7 @@ async function loadHistory() {
     }).join("");
     [...document.querySelectorAll(".deal-item")].forEach((el) => {
       el.onclick = async () => {
-        const res = await fetch(`/api/v1/deals/${el.dataset.id}`, { headers: headers() });
+        const res = await fetch(`/api/v1/deals/${el.dataset.id}`);
         if (!res.ok) return;
         const d = await res.json();
         renderResult({

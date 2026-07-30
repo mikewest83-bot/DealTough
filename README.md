@@ -21,15 +21,14 @@ always boots, and unaffected routes keep working.
 
 ## API
 
-All routes are JSON. Routes marked 🔑 require the `X-Api-Key` header
-(`DEALTOUGH_API_KEY`; if the env var is unset, they're open).
+All routes are JSON and open — no API key required.
 
 ```http
 GET  /health                       → { ok, engineVersion }
 POST /api/v1/deals/analyze         → DealRecommendation (caller supplies full DealInput)
-POST /api/v1/deals/from-listing 🔑 → full pipeline: { rawText, photos?, categoryOverride? }
-GET  /api/v1/deals 🔑              → recent analyses (limit ≤ 100, offset)
-GET  /api/v1/deals/:id 🔑          → one saved analysis
+POST /api/v1/deals/from-listing    → full pipeline: { rawText, photos?, categoryOverride? }
+GET  /api/v1/deals                 → recent analyses (limit ≤ 100, offset)
+GET  /api/v1/deals/:id             → one saved analysis
 ```
 
 `from-listing` is rate-limited (6/min per IP) since it spends Anthropic tokens.
@@ -79,7 +78,6 @@ ANTHROPIC_API_KEY=...    # listing extraction (console.anthropic.com)
 EBAY_CLIENT_ID=...       # comparables (developer.ebay.com production keyset)
 EBAY_CLIENT_SECRET=...
 DATABASE_URL=...         # DealVault (Postgres)
-DEALTOUGH_API_KEY=...    # protects from-listing + DealVault routes
 ```
 
 ## Deploy (Railway)
@@ -96,4 +94,7 @@ TCP proxy on the Postgres service — always delete the proxy immediately after.
   approved partners.
 - Category → eBay search mapping is keyword-based, best-effort; generic titles pull
   noisy comps.
-- Single shared API key, no user accounts. In-memory rate limiting assumes one instance.
+- No auth, no user accounts. The only cost guard on `from-listing` (which spends
+  Anthropic tokens once `ANTHROPIC_API_KEY` is set) is a 6/min-per-IP in-memory rate
+  limit — a determined abuser could still run up a bill over time. Fine for early,
+  low-traffic use; revisit before wide distribution.

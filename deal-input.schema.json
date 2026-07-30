@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DealTough DealInput",
+  "type": "object",
+  "required": [
+    "category",
+    "title",
+    "askingPrice",
+    "comparables"
+  ],
+  "properties": {
+    "category": {
+      "enum": [
+        "vehicle",
+        "electronics",
+        "tools",
+        "furniture",
+        "outdoor_equipment"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "askingPrice": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "condition": {
+      "enum": [
+        "new",
+        "like_new",
+        "good",
+        "fair",
+        "poor",
+        "unknown"
+      ]
+    },
+    "comparables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "price"
+        ],
+        "properties": {
+          "price": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "similarity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "sold": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string"
+          },
+          "distanceMiles": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

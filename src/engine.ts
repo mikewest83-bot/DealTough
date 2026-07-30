@@ -1,0 +1,342 @@
+import { CATEGORY_CONFIG } from "./config.js";
+import { clamp, roundMoney, severityPenalty, weightedMedian } from "./math.js";
+import type {
+  Comparable,
+  DealInput,
+  DealRecommendation,
+  RiskSeverity,
+  ScoreBreakdown,
+} from "./types.js";
+
+function validateInput(input: DealInput): void {
+  if (!input.title?.trim()) throw new Error("title is required");
+  if (!Number.isFinite(input.askingPrice) || input.askingPrice <= 0) {
+    throw new Error("askingPrice must be greater than zero");
+  }
+  if (!Array.isArray(input.comparables)) {
+    throw new Error("comparables must be an array");
+  }
+}
+
+function comparableWeight(comp: Comparable): number {
+  const similarity = clamp(comp.similarity ?? 0.65, 0.1, 1);
+  const soldBoost = comp.sold ? 1.2 : 1;
+  const distancePenalty = comp.distanceMiles == null
+    ? 1
+    : clamp(1 - comp.distanceMiles / 1000, 0.6, 1);
+  return similarity * soldBoost * distancePenalty;
+}
+
+function estimateMarketValue(input: DealInput): {
+  fairMarketValue: number;
+  comparableCount: number;
+  assumptions: string[];
+} {
+  const config = CATEGORY_CONFIG[input.category];
+  const valid = input.comparables.filter(
+    (c) => Number.isFinite(c.price) && c.price > 0
+  );
+
+  const assumptions: string[] = [];
+  if (!valid.length) {
+    assumptions.push("No usable comparable prices were supplied; market value is provisional.");
+    return {
+      fairMarketValue: input.askingPrice,
+      comparableCount: 0,
+      assumptions,
+    };
+  }
+
+  const base = weightedMedian(
+    valid.map((c) => ({ value: c.price, weight: comparableWeight(c) }))
+  );
+
+  const condition = input.condition ?? "unknown";
+  const conditionDiscount = config.conditionDiscounts[condition] ?? config.conditionDiscounts.unknown;
+  const adjusted = base * (1 - conditionDiscount);
+
+  if (condition === "unknown") {
+    assumptions.push("Condition was unknown, so a protective category discount was applied.");
+  }
+
+  return {
+    fairMarketValue: roundMoney(Math.max(1, adjusted)),
+    comparableCount: valid.length,
+    assumptions,
+  };
+}
+
+function estimateTrueCost(input: DealInput): {
+  trueCost: number;
+  hiddenCostTotal: number;
+  assumptions: string[];
+} {
+  const config = CATEGORY_CONFIG[input.category];
+  const supplied = input.hiddenCosts ?? [];
+  const suppliedTotal = supplied.reduce(
+    (sum, item) => sum + Math.max(0, item.amount),
+    0
+  );
+  const assumptions: string[] = [];
+
+  let hiddenCostTotal = suppliedTotal;
+  if (!supplied.length) {
+    hiddenCostTotal = input.askingPrice * config.defaultHiddenCostRate;
+    assumptions.push(
+      `No hidden costs were supplied; a protective ${(config.defaultHiddenCostRate * 100).toFixed(0)}% category reserve was used.`
+    );
+  }
+
+  return {
+    trueCost: roundMoney(input.askingPrice + hiddenCostTotal),
+    hiddenCostTotal: roundMoney(hiddenCostTotal),
+    assumptions,
+  };
+}
+
+function scoreValue(trueCost: number, fairMarketValue: number): number {
+  if (fairMarketValue <= 0) return 0;
+  const ratio = trueCost / fairMarketValue;
+  // Full score at <=75% of FMV; 20 points at FMV; zero around 140%+.
+  if (ratio <= 0.75) return 35;
+  if (ratio <= 1) return 35 - ((ratio - 0.75) / 0.25) * 15;
+  return clamp(20 - ((ratio - 1) / 0.40) * 20, 0, 20);
+}
+
+function scoreRisk(input: DealInput): {
+  score: number;
+  riskLevel: DealRecommendation["riskLevel"];
+  topRisks: string[];
+} {
+  const signals = input.riskSignals ?? [];
+  let penalty = signals.reduce(
+    (sum, signal) => sum + severityPenalty[signal.severity],
+    0
+  );
+
+  if ((input.requiredFieldsPresent ?? 0.7) < 0.55) penalty += 4;
+  if ((input.photoQuality ?? 0.65) < 0.4) penalty += 3;
+  if (
+    input.sellerRating != null &&
+    input.sellerReviewCount != null &&
+    input.sellerReviewCount >= 3 &&
+    input.sellerRating < 3.5
+  ) penalty += 4;
+
+  const hasCritical = signals.some((s) => s.severity === "critical");
+  const hasHigh = signals.some((s) => s.severity === "high");
+
+  const score = clamp(20 - penalty, 0, 20);
+  const riskLevel: DealRecommendation["riskLevel"] =
+    hasCritical || score <= 4
+      ? "Critical"
+      : hasHigh || score <= 10
+      ? "High"
+      : score <= 15
+      ? "Moderate"
+      : "Low";
+
+  return {
+    score,
+    riskLevel,
+    topRisks: signals
+      .sort((a, b) => {
+        const rank: Record<RiskSeverity, number> = {
+          critical: 4, high: 3, medium: 2, low: 1
+        };
+        return rank[b.severity] - rank[a.severity];
+      })
+      .slice(0, 5)
+      .map((s) => s.evidence ? `${s.label}: ${s.evidence}` : s.label),
+  };
+}
+
+function scoreTrueCost(hiddenCostTotal: number, askingPrice: number): number {
+  const ratio = hiddenCostTotal / askingPrice;
+  if (ratio <= 0.02) return 15;
+  if (ratio <= 0.10) return 15 - ((ratio - 0.02) / 0.08) * 5;
+  if (ratio <= 0.30) return 10 - ((ratio - 0.10) / 0.20) * 8;
+  return clamp(2 - ((ratio - 0.30) / 0.40) * 2, 0, 2);
+}
+
+function scoreNegotiation(input: DealInput): number {
+  const days = clamp(input.daysListed ?? 0, 0, 90);
+  const reductions = clamp(input.priceReductionCount ?? 0, 0, 4);
+  const supply = clamp(input.inventoryIndex ?? 0.5, 0, 1);
+  const demand = clamp(input.demandIndex ?? 0.5, 0, 1);
+
+  const dayPoints = (days / 90) * 4;
+  const reductionPoints = (reductions / 4) * 2.5;
+  const supplyPoints = supply * 2;
+  const lowDemandPoints = (1 - demand) * 1.5;
+  return clamp(dayPoints + reductionPoints + supplyPoints + lowDemandPoints, 0, 10);
+}
+
+function scoreMarket(input: DealInput): number {
+  const demand = clamp(input.demandIndex ?? 0.5, 0, 1);
+  const inventory = clamp(input.inventoryIndex ?? 0.5, 0, 1);
+  // Healthy demand supports resale; extreme scarcity reduces negotiating room.
+  const demandQuality = 1 - Math.abs(demand - 0.65) / 0.65;
+  const inventoryQuality = 1 - Math.abs(inventory - 0.55) / 0.55;
+  return clamp((demandQuality * 6) + (inventoryQuality * 4), 0, 10);
+}
+
+function calculateConfidence(input: DealInput, comparableCount: number): number {
+  const compScore = clamp(comparableCount / 8, 0, 1) * 4;
+  const completeness = clamp(input.requiredFieldsPresent ?? 0.65, 0, 1) * 2.5;
+  const photos = clamp(input.photoQuality ?? 0.6, 0, 1) * 1.5;
+  const conditionKnown = input.condition && input.condition !== "unknown" ? 1 : 0.35;
+  const sellerEvidence =
+    input.sellerRating != null && input.sellerReviewCount != null ? 1 : 0.35;
+
+  return clamp(compScore + completeness + photos + conditionKnown + sellerEvidence, 0, 10);
+}
+
+function verdictFor(score: number, riskLevel: DealRecommendation["riskLevel"]): DealRecommendation["verdict"] {
+  // Protective overrides: a dangerous listing cannot be rescued by a cheap price.
+  if (riskLevel === "Critical") return "Walk Away";
+  if (riskLevel === "High" && score >= 60) return "High Risk";
+  if (score >= 95) return "Exceptional Deal";
+  if (score >= 90) return "Excellent Deal";
+  if (score >= 80) return "Great Buy";
+  if (score >= 70) return "Good Deal";
+  if (score >= 60) return "Fair Deal";
+  if (score >= 40) return "High Risk";
+  return "Walk Away";
+}
+
+function sellerQuestionsFor(input: DealInput): string[] {
+  const base = [
+    "What is the reason for selling?",
+    "Are there any known problems, damage, or missing parts not shown in the listing?",
+    "What is the lowest price you would realistically accept for a quick, straightforward sale?",
+  ];
+
+  const categoryQuestions: Record<DealInput["category"], string[]> = {
+    vehicle: [
+      "Can you provide the VIN, title status, service records, and accident history?",
+      "What maintenance or repairs will be due in the next 12 months?",
+    ],
+    electronics: [
+      "Is it fully functional, unlocked, and free of account or activation locks?",
+      "What is the battery health, and are the charger and original accessories included?",
+    ],
+    tools: [
+      "Can I test it under load before purchasing?",
+      "Are the battery, charger, guards, cases, and attachments included?",
+    ],
+    furniture: [
+      "Are there stains, odors, smoke exposure, pet damage, pests, or structural repairs?",
+      "What are the exact dimensions, and can it be disassembled for transport?",
+    ],
+    outdoor_equipment: [
+      "Can it be started and tested from cold before purchase?",
+      "What service, repairs, storage conditions, and replacement parts should I know about?",
+    ],
+  };
+  return [...categoryQuestions[input.category], ...base].slice(0, 5);
+}
+
+function negotiationMessageFor(
+  input: DealInput,
+  openingOffer: number,
+  targetPrice: number
+): string {
+  return `Hi, I’m interested in the ${input.title}. Based on its condition, the available market comparisons, and the costs I may need to cover after purchase, I could offer $${openingOffer.toLocaleString()} and complete the deal promptly if everything checks out as described. If that is too low, would you consider something near $${targetPrice.toLocaleString()}?`;
+}
+
+export function analyzeDeal(input: DealInput): DealRecommendation {
+  validateInput(input);
+
+  const market = estimateMarketValue(input);
+  const costs = estimateTrueCost(input);
+  const risk = scoreRisk(input);
+
+  const valueScore = scoreValue(costs.trueCost, market.fairMarketValue);
+  const trueCostScore = scoreTrueCost(costs.hiddenCostTotal, input.askingPrice);
+  const negotiationScore = scoreNegotiation(input);
+  const marketScore = scoreMarket(input);
+  const confidenceScore = calculateConfidence(input, market.comparableCount);
+
+  const breakdown: ScoreBreakdown = {
+    value: Math.round(valueScore),
+    risk: Math.round(risk.score),
+    trueCost: Math.round(trueCostScore),
+    negotiation: Math.round(negotiationScore),
+    market: Math.round(marketScore),
+    confidence: Math.round(confidenceScore),
+  };
+
+  let dealScore = Object.values(breakdown).reduce((sum, value) => sum + value, 0);
+
+  // Hard protection rules.
+  if (risk.riskLevel === "Critical") dealScore = Math.min(dealScore, 39);
+  if (risk.riskLevel === "High") dealScore = Math.min(dealScore, 59);
+
+  const config = CATEGORY_CONFIG[input.category];
+  const leverage = negotiationScore / 10;
+  const floor = market.fairMarketValue * config.negotiationFloorPercent;
+  const openingOffer = roundMoney(
+    clamp(
+      input.askingPrice * (0.83 - leverage * 0.08),
+      floor,
+      input.askingPrice
+    )
+  );
+  const targetPrice = roundMoney(
+    Math.min(
+      input.askingPrice,
+      market.fairMarketValue * (0.88 + (1 - leverage) * 0.05)
+    )
+  );
+
+  // Walk-away is based on true ownership value, not just sticker price.
+  const walkAwayPrice = roundMoney(
+    Math.max(
+      0,
+      market.fairMarketValue * 0.98 - costs.hiddenCostTotal
+    )
+  );
+
+  const estimatedSavings = roundMoney(market.fairMarketValue - costs.trueCost);
+  const confidencePercent = Math.round(confidenceScore * 10);
+
+  const reasons: string[] = [];
+  const priceRatio = costs.trueCost / market.fairMarketValue;
+  if (priceRatio <= 0.85) reasons.push("True estimated cost is materially below fair market value.");
+  else if (priceRatio <= 1) reasons.push("True estimated cost is at or below fair market value.");
+  else reasons.push("True estimated cost is above fair market value.");
+
+  if (risk.riskLevel === "Low") reasons.push("No major risk signals were identified.");
+  if (risk.riskLevel === "Moderate") reasons.push("Some issues should be verified before purchase.");
+  if (risk.riskLevel === "High" || risk.riskLevel === "Critical") {
+    reasons.push("Risk protection rules limited the final score.");
+  }
+
+  if (negotiationScore >= 7) reasons.push("The listing shows strong negotiation leverage.");
+  else if (negotiationScore <= 3) reasons.push("Current negotiation leverage appears limited.");
+
+  if (confidencePercent < 60) reasons.push("The recommendation is provisional because important data is missing.");
+
+  return {
+    dealScore,
+    verdict: verdictFor(dealScore, risk.riskLevel),
+    fairMarketValue: market.fairMarketValue,
+    goodDealPrice: roundMoney(market.fairMarketValue * 0.90),
+    greatDealPrice: roundMoney(market.fairMarketValue * 0.80),
+    trueCost: costs.trueCost,
+    estimatedSavings,
+    openingOffer,
+    targetPrice,
+    walkAwayPrice,
+    confidencePercent,
+    riskLevel: risk.riskLevel,
+    breakdown,
+    reasons,
+    topRisks: risk.topRisks.length ? risk.topRisks : ["No explicit risk signals supplied."],
+    sellerQuestions: sellerQuestionsFor(input),
+    negotiationMessage: negotiationMessageFor(input, openingOffer, targetPrice),
+    assumptions: [...market.assumptions, ...costs.assumptions],
+    engineVersion: "DTE-1.0",
+  };
+}

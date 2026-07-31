@@ -4,11 +4,18 @@ import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { SignJWT } from "jose";
+import { webcrypto } from "node:crypto";
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import { analyzeDeal } from "./engine.js";
+
+if (!globalThis.crypto) {
+  Object.defineProperty(globalThis, "crypto", {
+    value: webcrypto
+  });
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

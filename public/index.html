@@ -1,136 +1,1109 @@
-<script>
-  const form = document.getElementById('analyze-form');
-  const urlInput = document.getElementById('listing-url');
-  const imageInput = document.getElementById('listing-image');
-  const checkoutButton = document.getElementById('checkout-btn');
-  const copyButton = document.getElementById('copy-btn');
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
 
-  form?.addEventListener('submit', async (event) => {
-    event.preventDefault();
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
 
-    const listingUrl = urlInput.value.trim();
-    const imageFile = imageInput.files?.[0];
+  <meta
+    name="description"
+    content="DealTough helps you evaluate listings, uncover hidden costs, and negotiate a better deal."
+  />
 
-    if (!listingUrl && !imageFile) {
-      alert('Please paste a listing URL or upload a screenshot.');
-      return;
+  <title>DealTough | Know Before You Buy</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #08111f;
+      --surface: #111c2d;
+      --surface-light: #17253a;
+      --text: #f8fafc;
+      --muted: #a7b2c4;
+      --orange: #f97316;
+      --orange-dark: #c84d08;
+      --green: #22c55e;
+      --border: rgba(255, 255, 255, 0.1);
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
     }
 
-    if (imageFile) {
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-      const maxSize = 10 * 1024 * 1024;
+    * {
+      box-sizing: border-box;
+    }
 
-      if (!allowedTypes.includes(imageFile.type)) {
-        alert('Please upload a PNG, JPG, or WEBP image.');
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(
+          circle at top right,
+          rgba(249, 115, 22, 0.16),
+          transparent 30%
+        ),
+        linear-gradient(180deg, #08111f 0%, #0b1422 100%);
+      color: var(--text);
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .page-shell {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .site-header {
+      padding: 24px 0;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 1.3rem;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--orange);
+      color: #08111f;
+      font-weight: 900;
+      box-shadow: 0 10px 30px rgba(249, 115, 22, 0.3);
+    }
+
+    .header-badge {
+      padding: 9px 13px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
+      gap: 48px;
+      align-items: center;
+      padding: 70px 0 90px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      color: #fdba74;
+      font-weight: 700;
+      font-size: 0.88rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 2px;
+      background: var(--orange);
+    }
+
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      font-size: clamp(3rem, 7vw, 5.6rem);
+      line-height: 0.98;
+      letter-spacing: -0.065em;
+    }
+
+    .highlight {
+      color: var(--orange);
+    }
+
+    .hero-copy {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: 1.08rem;
+      line-height: 1.75;
+    }
+
+    .benefits {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .benefit {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .benefit strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.95rem;
+    }
+
+    .benefit span {
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .analysis-card {
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: rgba(17, 28, 45, 0.9);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .card-heading {
+      margin: 0 0 8px;
+      font-size: 1.45rem;
+    }
+
+    .card-copy {
+      margin: 0 0 24px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.93rem;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .field input {
+      width: 100%;
+      min-height: 52px;
+      padding: 14px 15px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      outline: none;
+      background: #0c1727;
+      color: var(--text);
+      transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease;
+    }
+
+    .field input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+    }
+
+    .field input::placeholder {
+      color: #66748a;
+    }
+
+    .upload-box {
+      display: block;
+      padding: 17px;
+      border: 1px dashed rgba(255, 255, 255, 0.22);
+      border-radius: 12px;
+      background: #0c1727;
+    }
+
+    .upload-box input {
+      min-height: initial;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 18px 0;
+      color: #718096;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+      height: 1px;
+      flex: 1;
+      background: var(--border);
+    }
+
+    .primary-button,
+    .secondary-button {
+      width: 100%;
+      min-height: 52px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-weight: 800;
+      transition:
+        transform 160ms ease,
+        opacity 160ms ease,
+        background 160ms ease;
+    }
+
+    .primary-button {
+      border: 0;
+      background: var(--orange);
+      color: #101010;
+    }
+
+    .primary-button:hover {
+      background: #fb923c;
+      transform: translateY(-1px);
+    }
+
+    .primary-button:disabled,
+    .secondary-button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+      transform: none;
+    }
+
+    .secure-note {
+      margin: 13px 0 0;
+      color: #758399;
+      font-size: 0.78rem;
+      text-align: center;
+    }
+
+    .results-section {
+      padding: 30px 0 90px;
+    }
+
+    .section-title {
+      margin: 0 0 24px;
+      font-size: clamp(2rem, 4vw, 3.1rem);
+      letter-spacing: -0.045em;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .result-card {
+      min-height: 145px;
+      padding: 21px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--surface);
+    }
+
+    .result-card span {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .result-card strong {
+      display: block;
+      font-size: 1.7rem;
+      line-height: 1.15;
+    }
+
+    .result-card p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .wide-card {
+      grid-column: span 2;
+    }
+
+    .negotiation-card {
+      margin-top: 18px;
+      padding: 26px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+    }
+
+    .negotiation-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 15px;
+    }
+
+    .negotiation-header h3 {
+      margin: 0;
+    }
+
+    .secondary-button {
+      width: auto;
+      min-height: 42px;
+      padding: 10px 15px;
+      border: 1px solid var(--border);
+      background: var(--surface-light);
+      color: var(--text);
+    }
+
+    .script-box {
+      padding: 18px;
+      border-radius: 14px;
+      background: #0a1422;
+      color: #d8e0ea;
+      line-height: 1.65;
+    }
+
+    .upgrade-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 24px;
+      margin-top: 22px;
+      padding: 28px;
+      border: 1px solid rgba(249, 115, 22, 0.36);
+      border-radius: 20px;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(249, 115, 22, 0.13),
+          rgba(17, 28, 45, 0.92)
+        );
+    }
+
+    .upgrade-card h3 {
+      margin: 0 0 8px;
+      font-size: 1.35rem;
+    }
+
+    .upgrade-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .upgrade-card .primary-button {
+      width: auto;
+      min-width: 185px;
+    }
+
+    .status-message {
+      display: none;
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      line-height: 1.5;
+    }
+
+    .status-message.visible {
+      display: block;
+    }
+
+    .status-message.error {
+      background: rgba(239, 68, 68, 0.12);
+      color: #fecaca;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .status-message.success {
+      background: rgba(34, 197, 94, 0.12);
+      color: #bbf7d0;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    footer {
+      padding: 28px 0 40px;
+      border-top: 1px solid var(--border);
+      color: #738096;
+      text-align: center;
+      font-size: 0.83rem;
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 45px;
+      }
+
+      .benefits {
+        grid-template-columns: 1fr;
+      }
+
+      .results-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 580px) {
+      .page-shell {
+        width: min(100% - 22px, 1120px);
+      }
+
+      .site-header {
+        padding: 16px 0;
+      }
+
+      .header-badge {
+        display: none;
+      }
+
+      .hero {
+        gap: 30px;
+        padding: 34px 0 60px;
+      }
+
+      h1 {
+        font-size: clamp(2.7rem, 15vw, 4.3rem);
+      }
+
+      .analysis-card {
+        padding: 21px;
+        border-radius: 19px;
+      }
+
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .wide-card {
+        grid-column: auto;
+      }
+
+      .negotiation-header,
+      .upgrade-card {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+      }
+
+      .negotiation-header {
+        display: grid;
+      }
+
+      .secondary-button,
+      .upgrade-card .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="page-shell header-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark">DT</span>
+        <span>DealTough</span>
+      </a>
+
+      <div class="header-badge">
+        AI-powered deal protection
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-shell hero">
+      <div>
+        <div class="eyebrow">Buy smarter. Negotiate tougher.</div>
+
+        <h1>
+          Know whether it is a
+          <span class="highlight">good deal</span>
+          before you buy.
+        </h1>
+
+        <p class="hero-copy">
+          Paste a listing URL or upload a screenshot. DealTough helps
+          estimate fair market value, hidden costs, risks, and the strongest
+          price to offer.
+        </p>
+
+        <div class="benefits">
+          <div class="benefit">
+            <strong>Fair market value</strong>
+            <span>Understand what the item should actually cost.</span>
+          </div>
+
+          <div class="benefit">
+            <strong>Hidden-cost protection</strong>
+            <span>Account for repairs, fees, and overlooked expenses.</span>
+          </div>
+
+          <div class="benefit">
+            <strong>Negotiation leverage</strong>
+            <span>Receive an opening offer and seller-ready message.</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="analysis-card" aria-labelledby="analysis-heading">
+        <h2 class="card-heading" id="analysis-heading">
+          Analyze a listing
+        </h2>
+
+        <p class="card-copy">
+          Add a listing link, screenshot, or both.
+        </p>
+
+        <form id="analyze-form">
+          <div class="field">
+            <label for="listing-url">Listing URL</label>
+
+            <input
+              id="listing-url"
+              name="listingUrl"
+              type="url"
+              placeholder="https://facebook.com/marketplace/..."
+              autocomplete="url"
+            />
+          </div>
+
+          <div class="divider">or</div>
+
+          <div class="field">
+            <label for="listing-image">Upload screenshot</label>
+
+            <div class="upload-box">
+              <input
+                id="listing-image"
+                name="listingImage"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+              />
+            </div>
+          </div>
+
+          <button class="primary-button" type="submit">
+            Analyze This Deal
+          </button>
+
+          <p class="secure-note">
+            Maximum image size: 10 MB
+          </p>
+
+          <div
+            id="form-status"
+            class="status-message"
+            role="status"
+            aria-live="polite"
+          ></div>
+        </form>
+      </section>
+    </section>
+
+    <section
+      class="page-shell results-section"
+      id="results-container"
+      aria-labelledby="results-heading"
+    >
+      <h2 class="section-title" id="results-heading">
+        Your DealTough analysis
+      </h2>
+
+      <div class="results-grid">
+        <article class="result-card">
+          <span>Deal score</span>
+          <strong id="deal-score">—</strong>
+          <p id="deal-score-note">
+            Submit a listing to receive your score.
+          </p>
+        </article>
+
+        <article class="result-card">
+          <span>Verdict</span>
+          <strong id="verdict">Waiting</strong>
+          <p id="verdict-note">
+            DealTough will classify the opportunity.
+          </p>
+        </article>
+
+        <article class="result-card">
+          <span>Market value</span>
+          <strong id="market-value">—</strong>
+          <p>Estimated fair-market range.</p>
+        </article>
+
+        <article class="result-card">
+          <span>True cost</span>
+          <strong id="true-cost">—</strong>
+          <p>Purchase price plus likely added costs.</p>
+        </article>
+
+        <article class="result-card">
+          <span>Opening offer</span>
+          <strong id="opening-offer">—</strong>
+          <p>A strong but reasonable starting point.</p>
+        </article>
+
+        <article class="result-card">
+          <span>Maximum price</span>
+          <strong id="maximum-price">—</strong>
+          <p>The suggested walk-away ceiling.</p>
+        </article>
+
+        <article class="result-card wide-card">
+          <span>Major risks</span>
+          <strong id="risk-heading">No analysis yet</strong>
+          <p id="risks">
+            Risks and warning signs will appear here.
+          </p>
+        </article>
+
+        <article class="result-card wide-card">
+          <span>Seller questions</span>
+          <strong id="questions-heading">What to ask</strong>
+          <p id="seller-questions">
+            DealTough will prepare questions for the seller.
+          </p>
+        </article>
+      </div>
+
+      <article class="negotiation-card">
+        <div class="negotiation-header">
+          <h3>Negotiation message</h3>
+
+          <button
+            class="secondary-button"
+            id="copy-btn"
+            type="button"
+          >
+            Copy Script
+          </button>
+        </div>
+
+        <div class="script-box" id="negotiation-script">
+          Your customized negotiation message will appear here.
+        </div>
+      </article>
+
+      <article class="upgrade-card">
+        <div>
+          <h3>Unlock complete DealTough reports</h3>
+
+          <p>
+            Get deeper risk analysis, seller questions, negotiation guidance,
+            and saved deal history.
+          </p>
+        </div>
+
+        <button
+          class="primary-button"
+          id="checkout-btn"
+          type="button"
+        >
+          Upgrade DealTough
+        </button>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <div class="page-shell">
+      © 2026 DealTough. Know the value. Protect your money.
+    </div>
+  </footer>
+
+  <script>
+    const form = document.getElementById("analyze-form");
+    const urlInput = document.getElementById("listing-url");
+    const imageInput = document.getElementById("listing-image");
+    const checkoutButton = document.getElementById("checkout-btn");
+    const copyButton = document.getElementById("copy-btn");
+    const statusMessage = document.getElementById("form-status");
+
+    const setStatus = (message, type) => {
+      if (!statusMessage) {
         return;
       }
 
-      if (imageFile.size > maxSize) {
-        alert('The image must be smaller than 10 MB.');
+      statusMessage.textContent = message;
+      statusMessage.className = "status-message visible " + type;
+    };
+
+    const clearStatus = () => {
+      if (!statusMessage) {
         return;
       }
-    }
 
-    const submitButton = form.querySelector('button[type="submit"]');
-    const originalText = submitButton.innerHTML;
+      statusMessage.textContent = "";
+      statusMessage.className = "status-message";
+    };
 
-    try {
-      submitButton.disabled = true;
-      submitButton.innerHTML = '<span>Analyzing...</span>';
+    const formatMoney = (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "—";
+      }
 
-      const formData = new FormData();
+      if (typeof value === "string") {
+        return value;
+      }
 
-      if (listingUrl) {
-        formData.append('listingUrl', listingUrl);
+      const number = Number(value);
+
+      if (!Number.isFinite(number)) {
+        return String(value);
+      }
+
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0
+      }).format(number);
+    };
+
+    const formatList = (value) => {
+      if (Array.isArray(value)) {
+        return value.join(" • ");
+      }
+
+      return value || "—";
+    };
+
+    const updateResults = (data) => {
+      const setText = (id, value) => {
+        const element = document.getElementById(id);
+
+        if (element) {
+          element.textContent = value ?? "—";
+        }
+      };
+
+      setText(
+        "deal-score",
+        data.dealScore ??
+          data.score ??
+          data.deal_score ??
+          "—"
+      );
+
+      setText(
+        "deal-score-note",
+        data.confidence
+          ? "Confidence: " + data.confidence
+          : "Analysis completed."
+      );
+
+      setText(
+        "verdict",
+        data.verdict ??
+          data.recommendation ??
+          "Review"
+      );
+
+      setText(
+        "verdict-note",
+        data.summary ??
+          data.reason ??
+          data.reasons?.[0] ??
+          "Review the details below."
+      );
+
+      setText(
+        "market-value",
+        formatMoney(
+          data.marketValue ??
+          data.market_value ??
+          data.fairMarketValue
+        )
+      );
+
+      setText(
+        "true-cost",
+        formatMoney(
+          data.trueCost ??
+          data.true_cost ??
+          data.totalCost
+        )
+      );
+
+      setText(
+        "opening-offer",
+        formatMoney(
+          data.openingOffer ??
+          data.opening_offer ??
+          data.suggestedOffer
+        )
+      );
+
+      setText(
+        "maximum-price",
+        formatMoney(
+          data.maxPrice ??
+          data.maximumPrice ??
+          data.max_price
+        )
+      );
+
+      setText(
+        "risk-heading",
+        data.riskLevel ??
+          data.risk_level ??
+          "Risks identified"
+      );
+
+      setText(
+        "risks",
+        formatList(
+          data.risks ??
+          data.redFlags ??
+          data.warnings
+        )
+      );
+
+      setText(
+        "seller-questions",
+        formatList(
+          data.sellerQuestions ??
+          data.seller_questions ??
+          data.questions
+        )
+      );
+
+      setText(
+        "negotiation-script",
+        data.negotiationMessage ??
+          data.negotiation_message ??
+          data.message ??
+          "No negotiation message was returned."
+      );
+    };
+
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearStatus();
+
+      const listingUrl = urlInput?.value.trim() || "";
+      const imageFile = imageInput?.files?.[0];
+
+      if (!listingUrl && !imageFile) {
+        setStatus(
+          "Please paste a listing URL or upload a screenshot.",
+          "error"
+        );
+        return;
       }
 
       if (imageFile) {
-        formData.append('listingImage', imageFile);
-      }
+        const allowedTypes = [
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ];
 
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        body: formData
-      });
+        const maxSize = 10 * 1024 * 1024;
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Unable to analyze this listing.');
-      }
-
-      console.log('DealTough result:', data);
-
-      // Next step:
-      // Replace the hard-coded values in the results section
-      // with values returned in the data object.
-
-      document
-        .getElementById('results-container')
-        ?.scrollIntoView({ behavior: 'smooth' });
-
-    } catch (error) {
-      console.error('Analysis error:', error);
-      alert(error.message || 'Something went wrong. Please try again.');
-    } finally {
-      submitButton.disabled = false;
-      submitButton.innerHTML = originalText;
-    }
-  });
-
-  checkoutButton?.addEventListener('click', async () => {
-    const originalText = checkoutButton.textContent;
-
-    try {
-      checkoutButton.disabled = true;
-      checkoutButton.textContent = 'Loading...';
-
-      const response = await fetch('/api/billing/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+        if (!allowedTypes.includes(imageFile.type)) {
+          setStatus(
+            "Please upload a PNG, JPG, or WEBP image.",
+            "error"
+          );
+          return;
         }
-      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Checkout could not be started.');
+        if (imageFile.size > maxSize) {
+          setStatus(
+            "The image must be smaller than 10 MB.",
+            "error"
+          );
+          return;
+        }
       }
 
-      if (!data.url) {
-        throw new Error('Checkout URL was not returned.');
+      const submitButton = form.querySelector(
+        'button[type="submit"]'
+      );
+
+      const originalText =
+        submitButton?.textContent || "Analyze This Deal";
+
+      try {
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = "Analyzing...";
+        }
+
+        /*
+         * The current Express API uses express.json().
+         * Image analysis needs a multipart upload route later.
+         * For now, send the URL as JSON so the existing API can respond.
+         */
+        const response = await fetch("/api/analyze", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            listingUrl,
+            imageName: imageFile?.name || null
+          })
+        });
+
+        const contentType =
+          response.headers.get("content-type") || "";
+
+        const data = contentType.includes("application/json")
+          ? await response.json()
+          : {
+              error: await response.text()
+            };
+
+        if (!response.ok) {
+          throw new Error(
+            data.error || "Unable to analyze this listing."
+          );
+        }
+
+        updateResults(data);
+
+        setStatus(
+          "Your DealTough analysis is ready.",
+          "success"
+        );
+
+        document
+          .getElementById("results-container")
+          ?.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+      } catch (error) {
+        console.error("Analysis error:", error);
+
+        setStatus(
+          error instanceof Error
+            ? error.message
+            : "Something went wrong. Please try again.",
+          "error"
+        );
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        }
+      }
+    });
+
+    checkoutButton?.addEventListener("click", async () => {
+      const originalText =
+        checkoutButton.textContent || "Upgrade DealTough";
+
+      try {
+        checkoutButton.disabled = true;
+        checkoutButton.textContent = "Loading...";
+
+        const response = await fetch("/api/billing/checkout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({})
+        });
+
+        const contentType =
+          response.headers.get("content-type") || "";
+
+        const data = contentType.includes("application/json")
+          ? await response.json()
+          : {
+              error: await response.text()
+            };
+
+        if (!response.ok) {
+          throw new Error(
+            data.error || "Checkout could not be started."
+          );
+        }
+
+        if (!data.url) {
+          throw new Error("Checkout URL was not returned.");
+        }
+
+        window.location.href = data.url;
+      } catch (error) {
+        console.error("Checkout error:", error);
+
+        alert(
+          error instanceof Error
+            ? error.message
+            : "Unable to open checkout."
+        );
+
+        checkoutButton.disabled = false;
+        checkoutButton.textContent = originalText;
+      }
+    });
+
+    copyButton?.addEventListener("click", async () => {
+      const scriptText =
+        document
+          .getElementById("negotiation-script")
+          ?.textContent
+          ?.trim() || "";
+
+      if (!scriptText) {
+        return;
       }
 
-      window.location.href = data.url;
+      try {
+        await navigator.clipboard.writeText(scriptText);
+        copyButton.textContent = "Copied!";
 
-    } catch (error) {
-      console.error('Checkout error:', error);
-      alert(error.message || 'Unable to open checkout.');
-      checkoutButton.disabled = false;
-      checkoutButton.textContent = originalText;
-    }
-  });
-
-  copyButton?.addEventListener('click', async () => {
-    const scriptText = document.querySelector(
-      '#copy-btn + div'
-    )?.textContent?.trim();
-
-    if (!scriptText) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(scriptText);
-      copyButton.textContent = 'Copied!';
-
-      setTimeout(() => {
-        copyButton.textContent = 'Copy Script';
-      }, 1500);
-    } catch (error) {
-      console.error('Copy error:', error);
-      alert('The message could not be copied.');
-    }
-  });
-</script>
+        window.setTimeout(() => {
+          copyButton.textContent = "Copy Script";
+        }, 1500);
+      } catch (error) {
+        console.error("Copy error:", error);
+        alert("The message could not be copied.");
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,61 +1,13 @@
-export interface Comparable {
-  price?: number;
-  similarity?: number;
-  sold?: boolean;
-}
+import type { DealInput, DealRecommendation } from "./types.js";
 
-export interface HiddenCost {
-  label?: string;
-  amount?: number;
-  estimatedCost?: number;
-}
-
-export interface Factor {
-  impact: string;
-  label: string;
-  positive: boolean;
-}
-
-export interface ListingInput {
-  category?: string;
-  title?: string;
-  askingPrice?: number;
-  price?: number;
-  condition?: string;
-  daysListed?: number;
-  priceReductionCount?: number;
-  requiredFieldsPresent?: number;
-  photoQuality?: number;
-  demandIndex?: number;
-  inventoryIndex?: number;
-  comparables?: Comparable[];
-  hiddenCosts?: HiddenCost[];
-  riskSignals?: string[];
-  hasAccessories?: boolean;
-  [key: string]: any;
-}
-
-export interface ValuationResult {
-  listingPrice: number;
-  minMarket: number;
-  maxMarket: number;
-  dealScore: number;
-  trueCost: number;
-  walkAwayPrice: number;
-  fairMarketRange: { min: number; max: number };
-  scoreBreakdown: { positiveFactors: string[]; negativeFactors: string[] };
-  factors: Factor[];
-  [key: string]: any;
-}
-
-export function analyzeDeal(input: ListingInput): ValuationResult {
+export function analyzeDeal(input: any): any {
   const price = Number(input?.askingPrice ?? input?.price ?? 0);
 
   // 1. Calculate market average from comparables
   const comparables = Array.isArray(input?.comparables) ? input.comparables : [];
   let marketAvg = price;
   if (comparables.length > 0) {
-    const total = comparables.reduce((acc, comp) => acc + Number(comp?.price ?? 0), 0);
+    const total = comparables.reduce((acc: number, comp: any) => acc + Number(comp?.price ?? 0), 0);
     marketAvg = total / comparables.length;
   }
 
@@ -64,7 +16,7 @@ export function analyzeDeal(input: ListingInput): ValuationResult {
 
   // 2. Calculate true cost (Price + Hidden Costs)
   const hiddenCosts = Array.isArray(input?.hiddenCosts) ? input.hiddenCosts : [];
-  const hiddenCostTotal = hiddenCosts.reduce((sum, item) => {
+  const hiddenCostTotal = hiddenCosts.reduce((sum: number, item: any) => {
     const cost = item?.estimatedCost ?? item?.amount ?? 25;
     return sum + Number(cost);
   }, 0);
@@ -74,7 +26,7 @@ export function analyzeDeal(input: ListingInput): ValuationResult {
   let score = 75;
   const positiveFactors: string[] = [];
   const negativeFactors: string[] = [];
-  const factors: Factor[] = [];
+  const factors: Array<{ impact: string; label: string; positive: boolean }> = [];
 
   const riskSignals = Array.isArray(input?.riskSignals) ? input.riskSignals : [];
   const hasCriticalRisk = riskSignals.length > 0;

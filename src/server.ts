@@ -25,6 +25,9 @@ const app = express();
 const prisma = new PrismaClient();
 
 app.set("trust proxy", 1);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 const PORT = process.env.PORT
   ? Number.parseInt(process.env.PORT, 10)

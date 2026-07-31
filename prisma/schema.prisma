@@ -8,45 +8,60 @@ generator client {
 }
 
 model Deal {
-  id             String   @id @default(cuid())
-  createdAt      DateTime @default(now())
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
 
-  title          String
-  category       String
-  askingPrice    Float
-  condition      String?
+  title       String
+  category    String
+  askingPrice Float
+  condition   String?
 
-  // Full DealRecommendation from analyzeDeal(), stored as-is.
+  // Full DealRecommendation returned by analyzeDeal().
   recommendation Json
 
-  source         String  @default("from-listing")
+  source         String  @default("manual")
   rawListingText String?
 
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@index([createdAt])
 }
 
 model User {
-  id            String              @id @default(cuid())
-  email         String              @unique
-  passwordHash  String
-  creditBalance Int                 @default(0)
-  createdAt     DateTime            @default(now())
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  deals         Deal[]
-  transactions  CreditTransaction[]
+  // Monetization
+  plan               String   @default("free")
+  monthlyUsage       Int      @default(0)
+  monthlyAllowance   Int      @default(2)
+  monthlyResetAt     DateTime
+  creditBalance      Int      @default(0)
+  subscriptionStatus String   @default("inactive")
+
+  // Stripe information will be filled in during the next phase.
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+
+  deals        Deal[]
+  transactions CreditTransaction[]
 }
 
 model CreditTransaction {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  delta           Int
-  reason          String // "purchase" | "consumption" | "signup_bonus"
-  stripeSessionId String?  @unique
-  createdAt       DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delta     Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  stripeSessionId String? @unique
 
   @@index([userId])
+  @@index([createdAt])
 }

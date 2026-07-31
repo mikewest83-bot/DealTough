@@ -100,13 +100,15 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error(err);
-con
+
     res.status(500).json({
       error: "Unable to sign in."
     });
   }
 });
-
+app.post("/api/auth/register", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
 if (!email || !password) {
   res.status(400).json({
     error: "Email and password are required."

@@ -103,9 +103,17 @@ async function getSignedInUserId(
   }
 }
 
-app.post("/api/stripe/webhook", express.raw(...))
-app.use(express.json());
-app.use(cookieParser());
+function getAppUrl(req: Request): string {
+  const configuredUrl = process.env.APP_URL;
+
+  if (configuredUrl) {
+    return configuredUrl.endsWith("/")
+      ? configuredUrl.slice(0, -1)
+      : configuredUrl;
+  }
+
+  return req.protocol + "://" + req.get("host");
+}
 
 // Find the public folder in development and production
 const possiblePublicPaths = [

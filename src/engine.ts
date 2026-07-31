@@ -1,10 +1,8 @@
 import type {
   DealInput,
   DealRecommendation,
-  ScoreBreakdown,
   Comparable,
-  CostItem,
-  RiskSignal
+  CostItem
 } from "./types.js";
 
 export function analyzeDeal(input: DealInput): DealRecommendation {
@@ -13,7 +11,7 @@ export function analyzeDeal(input: DealInput): DealRecommendation {
   // 1. Calculate market average from comparables
   let marketAvg = price;
   if (input.comparables && input.comparables.length > 0) {
-    const total = input.comparables.reduce((acc: number, comp: Comparable) => acc + comp.price, 0);
+    const total = input.comparables.reduce((acc, comp) => acc + (comp.price || 0), 0);
     marketAvg = total / input.comparables.length;
   }
 
@@ -21,8 +19,8 @@ export function analyzeDeal(input: DealInput): DealRecommendation {
   const fairMarketMax = Math.round(marketAvg * 1.1);
 
   // 2. Calculate true cost (Price + Hidden Costs)
-  const hiddenCostTotal = (input.hiddenCosts || []).reduce((sum: number, item: CostItem) => {
-    return sum + (item.estimatedCost !== undefined ? item.estimatedCost : 25);
+  const hiddenCostTotal = (input.hiddenCosts || []).reduce((sum, item) => {
+    return sum + (item.estimatedCost ?? 25);
   }, 0);
   const trueCost = price + hiddenCostTotal;
 

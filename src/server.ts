@@ -22,6 +22,13 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 const COOKIE_NAME = "dealtough_session";
+async function createSessionToken(userId: string): Promise<string> {
+  return new SignJWT({ userId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("30d")
+    .sign(JWT_SECRET);
+}
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
@@ -93,6 +100,22 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error(err);
+const token = await createSessionToken(user.id);
+
+res.cookie(COOKIE_NAME, token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  maxAge: 30 * 24 * 60 * 60 * 1000
+});
+const token = await createSessionToken(user.id);
+
+res.cookie(COOKIE_NAME, token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  maxAge: 30 * 24 * 60 * 60 * 1000
+});
     res.status(500).json({
       error: "Unable to sign in."
     });

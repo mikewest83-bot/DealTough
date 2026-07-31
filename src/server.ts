@@ -103,6 +103,7 @@ async function getSignedInUserId(
   }
 }
 
+app.post("/api/stripe/webhook", express.raw(...))
 app.use(express.json());
 app.use(cookieParser());
 

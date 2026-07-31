@@ -1,10 +1,9 @@
 import express from "express";
 import type { Request, Response } from "express";
-
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
-import { SignJWT, jwtVerify } from "jose";
+import { SignJWT } from "jose";
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,11 +16,16 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const prisma = new PrismaClient();
 
+const PORT = process.env.PORT
+  ? parseInt(process.env.PORT, 10)
+  : 3000;
+
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "change-this-secret"
 );
 
 const COOKIE_NAME = "dealtough_session";
+
 async function createSessionToken(userId: string): Promise<string> {
   return new SignJWT({ userId })
     .setProtectedHeader({ alg: "HS256" })
@@ -29,34 +33,121 @@ async function createSessionToken(userId: string): Promise<string> {
     .setExpirationTime("30d")
     .sign(JWT_SECRET);
 }
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+function saveSessionCookie(res: Response, token: string): void {
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    path: "/"
+  });
+}
 
 app.use(express.json());
 app.use(cookieParser());
 
-// Resolve public directory dynamically across dev & production build environments
+// Resolve the public directory in development and production
 const possiblePublicPaths = [
   path.join(process.cwd(), "public"),
   path.join(__dirname, "../public"),
-  path.join(__dirname, "public"),
+  path.join(__dirname, "public")
 ];
 
-const publicPath = possiblePublicPaths.find((p) => fs.existsSync(p)) || path.join(process.cwd(), "public");
+const publicPath =
+  possiblePublicPaths.find((p) => fs.existsSync(p)) ||
+  path.join(process.cwd(), "public");
 
-// 1. Serve Static UI Files
+// Serve frontend files
 app.use(express.static(publicPath));
 
-// 2. Healthcheck Endpoint for Railway
+// Railway health check
 app.get("/health", (_req: Request, res: Response) => {
   res.status(200).send("OK");
 });
+
+// Create account
 app.post("/api/auth/register", async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const email =
+      typeof req.body.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "";
 
+    const password =
+      typeof req.body.password === "string"
+        ? req.body.password
+        : "";
+
+    if (!email || !password) {
+      res.status(400).json({
+        error: "Email and password are required."
+      });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({
+        error: "Password must be at least 8 characters."
+      });
+      return;
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingUser) {
+      res.status(409).json({
+        error: "Account already exists."
+      });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        monthlyResetAt: new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000
+        )
+      }
+    });
+
+    const token = await createSessionToken(user.id);
+    saveSessionCookie(res, token);
+
+    res.status(201).json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        plan: user.plan
+      }
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+
+    res.status(500).json({
+      error: "Unable to create account."
+    });
+  }
+});
+
+// Sign in
 app.post("/api/auth/login", async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const email =
+      typeof req.body.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "";
+
+    const password =
+      typeof req.body.password === "string"
+        ? req.body.password
+        : "";
 
     if (!email || !password) {
       res.status(400).json({
@@ -66,9 +157,7 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
     }
 
     const user = await prisma.user.findUnique({
-      where: {
-        email: email.toLowerCase()
-      }
+      where: { email }
     });
 
     if (!user) {
@@ -90,6 +179,9 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
       return;
     }
 
+    const token = await createSessionToken(user.id);
+    saveSessionCookie(res, token);
+
     res.json({
       success: true,
       user: {
@@ -98,80 +190,41 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
         plan: user.plan
       }
     });
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error("Login error:", error);
 
     res.status(500).json({
       error: "Unable to sign in."
     });
   }
 });
-app.post("/api/auth/register", async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
-if (!email || !password) {
-  res.status(400).json({
-    error: "Email and password are required."
-  });
-  return;
-}
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
-    });
-
-if (existingUser) {
-  res.status(409).json({
-    error: "Account already exists."
-  });
-  return;
-}
-
-    const passwordHash = await bcrypt.hash(password, 12);
-
-    const user = await prisma.user.create({
-      data: {
-        email: email.toLowerCase(),
-        passwordHash,
-        monthlyResetAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        plan: user.plan
-      }
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      error: "Unable to create account."
-    });
-  }
-});
-
-// 3. API Endpoint for Deal Analysis
+// Deal analysis
 app.post("/api/analyze", (req: Request, res: Response): void => {
   try {
     const input = req.body;
     const result = analyzeDeal(input);
+
     res.json(result);
   } catch (error) {
     console.error("Analysis Error:", error);
-    res.status(500).json({ error: "Failed to process deal analysis" });
+
+    res.status(500).json({
+      error: "Failed to process deal analysis"
+    });
   }
 });
-// 4. Catch-all Root / Frontend Fallback
+
+// Frontend fallback
 app.get("*", (_req: Request, res: Response) => {
   const indexPath = path.join(publicPath, "index.html");
+
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
-    res.status(404).send("index.html not found in public folder");
+    res.status(404).send(
+      "index.html not found in public folder"
+    );
   }
 });
 

@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DealTough — AI Marketplace Buying Assistant</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Stripe.js SDK -->
+  <script src="https://js.stripe.com/v3/"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -23,11 +25,11 @@
       </div>
       <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-400">
         <a href="#how-it-works" class="hover:text-white transition">How it Works</a>
-        <a href="#features" class="hover:text-white transition">Features</a>
+        <a href="#pricing" class="hover:text-white transition">Pricing</a>
         <a href="#analyzer" class="hover:text-white transition">Analyzer</a>
       </nav>
       <div>
-        <a href="#analyzer" class="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition">Analyze Listing</a>
+        <button id="checkout-btn" class="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition">Upgrade to Pro</button>
       </div>
     </div>
   </header>
@@ -167,6 +169,21 @@
       </div>
     </div>
   </footer>
+
+  <!-- Client-side Stripe Checkout Handler -->
+  <script>
+    document.getElementById('checkout-btn')?.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/billing/checkout', { method: 'POST' });
+        const data = await response.json();
+        if (data.url) {
+          window.location.href = data.url;
+        }
+      } catch (err) {
+        console.error('Checkout error:', err);
+      }
+    });
+  </script>
 
 </body>
 </html>

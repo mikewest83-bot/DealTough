@@ -12,7 +12,7 @@ export interface ValuationResult {
   factors: { impact: string; label: string; positive: boolean }[];
 }
 
-export function evaluateDeal(input: ListingInput, marketAvg: number): ValuationResult {
+export function analyzedeal(input: ListingInput, marketAvg: number): ValuationResult {
   const minMarket = Math.round(marketAvg * 0.9);
   const maxMarket = Math.round(marketAvg * 1.1);
 

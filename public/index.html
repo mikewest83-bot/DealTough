@@ -2,17 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta
     name="description"
-    content="DealTough helps you evaluate listings, uncover hidden costs, and negotiate a better deal."
+    content="DealTough helps you evaluate listings, estimate fair market value, uncover hidden costs, and negotiate a better deal."
   />
-
   <title>DealTough | Know Before You Buy</title>
 
   <style>
@@ -24,8 +18,6 @@
       --text: #f8fafc;
       --muted: #a7b2c4;
       --orange: #f97316;
-      --orange-dark: #c84d08;
-      --green: #22c55e;
       --border: rgba(255, 255, 255, 0.1);
       --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
     }
@@ -90,7 +82,6 @@
       text-decoration: none;
       font-weight: 800;
       font-size: 1.3rem;
-      letter-spacing: -0.03em;
     }
 
     .brand-mark {
@@ -227,9 +218,6 @@
       outline: none;
       background: #0c1727;
       color: var(--text);
-      transition:
-        border-color 160ms ease,
-        box-shadow 160ms ease;
     }
 
     .field input:focus {
@@ -283,10 +271,6 @@
       padding: 14px 18px;
       border-radius: 12px;
       font-weight: 800;
-      transition:
-        transform 160ms ease,
-        opacity 160ms ease,
-        background 160ms ease;
     }
 
     .primary-button {
@@ -297,14 +281,12 @@
 
     .primary-button:hover {
       background: #fb923c;
-      transform: translateY(-1px);
     }
 
     .primary-button:disabled,
     .secondary-button:disabled {
       cursor: wait;
       opacity: 0.65;
-      transform: none;
     }
 
     .secure-note {
@@ -402,39 +384,6 @@
       line-height: 1.65;
     }
 
-    .upgrade-card {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      gap: 24px;
-      margin-top: 22px;
-      padding: 28px;
-      border: 1px solid rgba(249, 115, 22, 0.36);
-      border-radius: 20px;
-      background:
-        linear-gradient(
-          135deg,
-          rgba(249, 115, 22, 0.13),
-          rgba(17, 28, 45, 0.92)
-        );
-    }
-
-    .upgrade-card h3 {
-      margin: 0 0 8px;
-      font-size: 1.35rem;
-    }
-
-    .upgrade-card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.55;
-    }
-
-    .upgrade-card .primary-button {
-      width: auto;
-      min-width: 185px;
-    }
-
     .status-message {
       display: none;
       margin-top: 16px;
@@ -487,10 +436,6 @@
         width: min(100% - 22px, 1120px);
       }
 
-      .site-header {
-        padding: 16px 0;
-      }
-
       .header-badge {
         display: none;
       }
@@ -506,7 +451,6 @@
 
       .analysis-card {
         padding: 21px;
-        border-radius: 19px;
       }
 
       .results-grid {
@@ -517,18 +461,11 @@
         grid-column: auto;
       }
 
-      .negotiation-header,
-      .upgrade-card {
-        grid-template-columns: 1fr;
-        align-items: stretch;
-      }
-
       .negotiation-header {
         display: grid;
       }
 
-      .secondary-button,
-      .upgrade-card .primary-button {
+      .secondary-button {
         width: 100%;
       }
     }
@@ -561,9 +498,9 @@
         </h1>
 
         <p class="hero-copy">
-          Paste a listing URL or upload a screenshot. DealTough helps
-          estimate fair market value, hidden costs, risks, and the strongest
-          price to offer.
+          Paste a listing URL and enter the seller's asking price plus your
+          best estimate of market value. DealTough will calculate a deal score,
+          true cost, opening offer, maximum price, risks, and negotiation message.
         </p>
 
         <div class="benefits">
@@ -590,7 +527,7 @@
         </h2>
 
         <p class="card-copy">
-          Add a listing link, screenshot, or both.
+          Enter the listing details below.
         </p>
 
         <form id="analyze-form">
@@ -606,7 +543,37 @@
             />
           </div>
 
-          <div class="divider">or</div>
+          <div class="field">
+            <label for="asking-price">Seller's asking price</label>
+
+            <input
+              id="asking-price"
+              name="askingPrice"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Example: 5000"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="estimated-market-value">
+              Estimated market value
+            </label>
+
+            <input
+              id="estimated-market-value"
+              name="estimatedMarketValue"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Example: 6200"
+              required
+            />
+          </div>
+
+          <div class="divider">optional</div>
 
           <div class="field">
             <label for="listing-image">Upload screenshot</label>
@@ -626,7 +593,7 @@
           </button>
 
           <p class="secure-note">
-            Maximum image size: 10 MB
+            Screenshot upload is shown for the next phase. Current analysis uses the values above.
           </p>
 
           <div
@@ -651,50 +618,44 @@
       <div class="results-grid">
         <article class="result-card">
           <span>Deal score</span>
-          <strong id="deal-score">—</strong>
-          <p id="deal-score-note">
-            Submit a listing to receive your score.
-          </p>
+          <strong id="deal-score">â</strong>
+          <p id="deal-score-note">Submit a listing to receive your score.</p>
         </article>
 
         <article class="result-card">
           <span>Verdict</span>
           <strong id="verdict">Waiting</strong>
-          <p id="verdict-note">
-            DealTough will classify the opportunity.
-          </p>
+          <p id="verdict-note">DealTough will classify the opportunity.</p>
         </article>
 
         <article class="result-card">
           <span>Market value</span>
-          <strong id="market-value">—</strong>
-          <p>Estimated fair-market range.</p>
+          <strong id="market-value">â</strong>
+          <p>Estimated fair-market value.</p>
         </article>
 
         <article class="result-card">
           <span>True cost</span>
-          <strong id="true-cost">—</strong>
+          <strong id="true-cost">â</strong>
           <p>Purchase price plus likely added costs.</p>
         </article>
 
         <article class="result-card">
           <span>Opening offer</span>
-          <strong id="opening-offer">—</strong>
+          <strong id="opening-offer">â</strong>
           <p>A strong but reasonable starting point.</p>
         </article>
 
         <article class="result-card">
           <span>Maximum price</span>
-          <strong id="maximum-price">—</strong>
+          <strong id="maximum-price">â</strong>
           <p>The suggested walk-away ceiling.</p>
         </article>
 
         <article class="result-card wide-card">
           <span>Major risks</span>
           <strong id="risk-heading">No analysis yet</strong>
-          <p id="risks">
-            Risks and warning signs will appear here.
-          </p>
+          <p id="risks">Risks and warning signs will appear here.</p>
         </article>
 
         <article class="result-card wide-card">
@@ -710,11 +671,7 @@
         <div class="negotiation-header">
           <h3>Negotiation message</h3>
 
-          <button
-            class="secondary-button"
-            id="copy-btn"
-            type="button"
-          >
+          <button class="secondary-button" id="copy-btn" type="button">
             Copy Script
           </button>
         </div>
@@ -723,31 +680,12 @@
           Your customized negotiation message will appear here.
         </div>
       </article>
-
-      <article class="upgrade-card">
-        <div>
-          <h3>Unlock complete DealTough reports</h3>
-
-          <p>
-            Get deeper risk analysis, seller questions, negotiation guidance,
-            and saved deal history.
-          </p>
-        </div>
-
-        <button
-          class="primary-button"
-          id="checkout-btn"
-          type="button"
-        >
-          Upgrade DealTough
-        </button>
-      </article>
     </section>
   </main>
 
   <footer>
     <div class="page-shell">
-      © 2026 DealTough. Know the value. Protect your money.
+      Â© 2026 DealTough. Know the value. Protect your money.
     </div>
   </footer>
 
@@ -755,34 +693,31 @@
     const form = document.getElementById("analyze-form");
     const urlInput = document.getElementById("listing-url");
     const imageInput = document.getElementById("listing-image");
-    const checkoutButton = document.getElementById("checkout-btn");
+    const askingPriceInput = document.getElementById("asking-price");
+    const estimatedMarketValueInput = document.getElementById(
+      "estimated-market-value"
+    );
     const copyButton = document.getElementById("copy-btn");
     const statusMessage = document.getElementById("form-status");
 
     const setStatus = (message, type) => {
-      if (!statusMessage) {
-        return;
-      }
-
+      if (!statusMessage) return;
       statusMessage.textContent = message;
       statusMessage.className = "status-message visible " + type;
     };
 
     const clearStatus = () => {
-      if (!statusMessage) {
-        return;
-      }
-
+      if (!statusMessage) return;
       statusMessage.textContent = "";
       statusMessage.className = "status-message";
     };
 
     const formatMoney = (value) => {
       if (value === null || value === undefined || value === "") {
-        return "—";
+        return "â";
       }
 
-      if (typeof value === "string") {
+      if (typeof value === "string" && value.trim().startsWith("$")) {
         return value;
       }
 
@@ -801,28 +736,19 @@
 
     const formatList = (value) => {
       if (Array.isArray(value)) {
-        return value.join(" • ");
+        return value.join(" â¢ ");
       }
 
-      return value || "—";
+      return value || "â";
     };
 
     const updateResults = (data) => {
       const setText = (id, value) => {
         const element = document.getElementById(id);
-
-        if (element) {
-          element.textContent = value ?? "—";
-        }
+        if (element) element.textContent = value ?? "â";
       };
 
-      setText(
-        "deal-score",
-        data.dealScore ??
-          data.score ??
-          data.deal_score ??
-          "—"
-      );
+      setText("deal-score", data.dealScore ?? data.score ?? "â");
 
       setText(
         "deal-score-note",
@@ -831,12 +757,7 @@
           : "Analysis completed."
       );
 
-      setText(
-        "verdict",
-        data.verdict ??
-          data.recommendation ??
-          "Review"
-      );
+      setText("verdict", data.verdict ?? data.recommendation ?? "Review");
 
       setText(
         "verdict-note",
@@ -850,25 +771,17 @@
         "market-value",
         formatMoney(
           data.marketValue ??
-          data.market_value ??
-          data.fairMarketValue
+          data.fairMarketValue ??
+          data.fairMarketRange?.max
         )
       );
 
-      setText(
-        "true-cost",
-        formatMoney(
-          data.trueCost ??
-          data.true_cost ??
-          data.totalCost
-        )
-      );
+      setText("true-cost", formatMoney(data.trueCost));
 
       setText(
         "opening-offer",
         formatMoney(
           data.openingOffer ??
-          data.opening_offer ??
           data.suggestedOffer
         )
       );
@@ -878,7 +791,7 @@
         formatMoney(
           data.maxPrice ??
           data.maximumPrice ??
-          data.max_price
+          data.walkAwayPrice
         )
       );
 
@@ -902,7 +815,6 @@
         "seller-questions",
         formatList(
           data.sellerQuestions ??
-          data.seller_questions ??
           data.questions
         )
       );
@@ -910,7 +822,6 @@
       setText(
         "negotiation-script",
         data.negotiationMessage ??
-          data.negotiation_message ??
           data.message ??
           "No negotiation message was returned."
       );
@@ -922,12 +833,21 @@
 
       const listingUrl = urlInput?.value.trim() || "";
       const imageFile = imageInput?.files?.[0];
+      const askingPrice = Number(askingPriceInput?.value || 0);
+      const estimatedMarketValue = Number(
+        estimatedMarketValueInput?.value || 0
+      );
 
-      if (!listingUrl && !imageFile) {
-        setStatus(
-          "Please paste a listing URL or upload a screenshot.",
-          "error"
-        );
+      if (!Number.isFinite(askingPrice) || askingPrice <= 0) {
+        setStatus("Please enter a valid asking price.", "error");
+        return;
+      }
+
+      if (
+        !Number.isFinite(estimatedMarketValue) ||
+        estimatedMarketValue <= 0
+      ) {
+        setStatus("Please enter a valid estimated market value.", "error");
         return;
       }
 
@@ -970,11 +890,6 @@
           submitButton.textContent = "Analyzing...";
         }
 
-        /*
-         * The current Express API uses express.json().
-         * Image analysis needs a multipart upload route later.
-         * For now, send the URL as JSON so the existing API can respond.
-         */
         const response = await fetch("/api/analyze", {
           method: "POST",
           headers: {
@@ -982,7 +897,9 @@
           },
           body: JSON.stringify({
             listingUrl,
-            imageName: imageFile?.name || null
+            imageName: imageFile?.name || null,
+            askingPrice,
+            estimatedMarketValue
           })
         });
 
@@ -991,9 +908,7 @@
 
         const data = contentType.includes("application/json")
           ? await response.json()
-          : {
-              error: await response.text()
-            };
+          : { error: await response.text() };
 
         if (!response.ok) {
           throw new Error(
@@ -1031,56 +946,6 @@
       }
     });
 
-    checkoutButton?.addEventListener("click", async () => {
-      const originalText =
-        checkoutButton.textContent || "Upgrade DealTough";
-
-      try {
-        checkoutButton.disabled = true;
-        checkoutButton.textContent = "Loading...";
-
-        const response = await fetch("/api/billing/checkout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({})
-        });
-
-        const contentType =
-          response.headers.get("content-type") || "";
-
-        const data = contentType.includes("application/json")
-          ? await response.json()
-          : {
-              error: await response.text()
-            };
-
-        if (!response.ok) {
-          throw new Error(
-            data.error || "Checkout could not be started."
-          );
-        }
-
-        if (!data.url) {
-          throw new Error("Checkout URL was not returned.");
-        }
-
-        window.location.href = data.url;
-      } catch (error) {
-        console.error("Checkout error:", error);
-
-        alert(
-          error instanceof Error
-            ? error.message
-            : "Unable to open checkout."
-        );
-
-        checkoutButton.disabled = false;
-        checkoutButton.textContent = originalText;
-      }
-    });
-
     copyButton?.addEventListener("click", async () => {
       const scriptText =
         document
@@ -1088,9 +953,7 @@
           ?.textContent
           ?.trim() || "";
 
-      if (!scriptText) {
-        return;
-      }
+      if (!scriptText) return;
 
       try {
         await navigator.clipboard.writeText(scriptText);

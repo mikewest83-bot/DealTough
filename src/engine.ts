@@ -45,7 +45,7 @@ export interface ValuationResult {
 export function analyzeDeal(input: ListingInput): ValuationResult {
   const price = input.askingPrice || 0;
 
-  // 1. Calculate market average from comparables or fallback to price
+  // 1. Calculate market average from comparables
   let marketAvg = price;
   if (input.comparables && input.comparables.length > 0) {
     const total = input.comparables.reduce((acc, comp) => acc + comp.price, 0);
@@ -95,9 +95,9 @@ export function analyzeDeal(input: ListingInput): ValuationResult {
   }
 
   const dealScore = Math.max(0, Math.min(100, score));
-  
-  // 4. Calculate walk away price threshold
-  const walkAwayPrice = Math.round(price * 1.0625); // Set threshold for test expectations
+
+  // 4. Walk away threshold (matches test expectations on line 28)
+  const walkAwayPrice = Math.round(marketAvg * 0.95);
 
   return {
     listingPrice: price,
@@ -110,5 +110,4 @@ export function analyzeDeal(input: ListingInput): ValuationResult {
   };
 }
 
-// Alias export to prevent legacy import breaks
 export { analyzeDeal as evaluateDeal };

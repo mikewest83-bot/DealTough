@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DealTough — Your AI Marketplace Buying Assistant</title>
+  <title>DealTough — AI Marketplace Buying Intelligence</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -41,7 +41,7 @@
       <div class="flex items-center space-x-3">
         <div class="bg-blue-600 text-white font-black text-sm px-2.5 py-1 rounded-lg tracking-wider shadow-md shadow-blue-600/30">DT</div>
         <span class="font-bold text-xl text-white tracking-tight">DealTough</span>
-        <span class="text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">PRO v1.0</span>
+        <span class="text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">v1.0</span>
       </div>
       <button class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl border border-slate-700 font-medium transition-all">
         Sign In
@@ -49,17 +49,17 @@
     </div>
   </header>
 
-  <main class="max-w-4xl mx-auto px-4 py-10 flex-1 w-full space-y-12">
+  <main class="max-w-4xl mx-auto px-4 py-10 flex-1 w-full space-y-10">
     
-    <div class="text-center space-y-4">
-      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-        ⚡ AI-powered price analysis for Marketplace shoppers
+    <div class="text-center space-y-3">
+      <span class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+        🛡️ Built to help buyers avoid overpaying.
       </span>
       <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white max-w-2xl mx-auto leading-tight">
-        Don't Spend Hundreds More Than You Need To
+        Know Before You Buy
       </h1>
-      <p class="text-slate-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
-        Most people overpay because they don't know what similar items actually sell for. Upload listing screenshots or paste details to get instant market value, hidden costs, and custom negotiation strategies.
+      <p class="text-slate-400 text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
+        AI-powered buying intelligence for Marketplace shoppers. Upload screenshots or listing details for instant market comps, hidden cost estimates, and custom negotiation scripts.
       </p>
     </div>
 
@@ -67,181 +67,135 @@
       
       <div>
         <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-          📸 Upload Marketplace Listing Screenshots
+          📸 Upload Listing Screenshots
         </label>
         <div class="border-2 border-dashed border-slate-700/80 hover:border-blue-500/80 rounded-2xl p-8 text-center cursor-pointer transition-all glass-input group">
           <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
             <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
           </div>
-          <p class="text-sm font-semibold text-slate-200">Upload Listing Screenshots</p>
-          <p class="text-xs text-slate-400 mt-1">Supports Facebook Marketplace, OfferUp, Craigslist, eBay & More</p>
+          <p class="text-sm font-semibold text-slate-200">Drop Marketplace Screenshots Here</p>
+          <p class="text-xs text-slate-400 mt-1">Supports Facebook Marketplace, eBay, OfferUp, Craigslist & Mercari</p>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+          Supports Listings From (Tap to try an example):
+        </label>
+        <div class="flex flex-wrap gap-2 text-xs">
+          <button onclick="loadSample('fb')" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-blue-500 text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+            <i class="fa-brands fa-facebook text-blue-500"></i> Facebook Marketplace
+          </button>
+          <button onclick="loadSample('ebay')" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500 text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-tag text-amber-500"></i> eBay
+          </button>
+          <button onclick="loadSample('offerup')" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500 text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-store text-emerald-500"></i> OfferUp
+          </button>
+          <button onclick="loadSample('craigslist')" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-purple-500 text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-list-check text-purple-500"></i> Craigslist
+          </button>
         </div>
       </div>
 
       <div>
         <label for="listing-text" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-          Or Paste Price & Listing Description
+          Or Paste Listing Details / URL
         </label>
-        <textarea id="listing-text" rows="3" placeholder="Paste listing text, condition notes, or asking price..." class="w-full glass-input border border-slate-800 rounded-xl p-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
+        <textarea id="listing-text" rows="3" placeholder="Paste price, condition, or listing description..." class="w-full glass-input border border-slate-800 rounded-xl p-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
       </div>
 
       <button id="btn-analyze" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2.5 text-base active:scale-[0.99]">
         <i class="fa-solid fa-bolt"></i>
         Tell Me If This Is Worth It
       </button>
-
-      <div class="grid grid-cols-3 gap-2 text-center pt-3 border-t border-slate-800/60">
-        <div class="text-[11px] text-slate-400"><i class="fa-solid fa-chart-line text-emerald-400 mr-1"></i> Live Comps</div>
-        <div class="text-[11px] text-slate-400"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1"></i> Risk Checks</div>
-        <div class="text-[11px] text-slate-400"><i class="fa-solid fa-message text-blue-400 mr-1"></i> Offer Generator</div>
-      </div>
     </div>
 
-    <div class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Example Analysis Preview</h2>
-        <span class="text-xs text-slate-500">Live Sample</span>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between px-1">
+        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Example AI Analysis Output</h2>
+        <span class="text-[11px] text-blue-400 font-mono">Live Demo Mockup</span>
       </div>
 
-      <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-6">
-        <div class="flex items-center justify-between">
+      <div class="glass-card p-6 rounded-2xl border border-slate-800/80 space-y-5">
+        
+        <div class="flex items-start justify-between">
           <div>
-            <span class="text-xs text-slate-400">Sample Deal: 2018 TAG Heuer Aquaracer</span>
-            <div class="text-xl font-bold text-white mt-0.5">Seller Asking: $2,800</div>
+            <span class="text-xs text-slate-400">Target Item: 2002 Toyota Tacoma TRD / 1911 Custom</span>
+            <div class="text-2xl font-black text-white mt-1">Seller Asking: <span class="text-slate-300">$4,200</span></div>
           </div>
-          <div class="text-right">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <i class="fa-solid fa-circle-check"></i> Great Buy (94/100)
-            </span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <i class="fa-solid fa-circle-check"></i> Great Buy (96/100)
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-800/80 text-sm">
+          <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span class="block text-xs text-slate-400">Fair Market Value</span>
+            <span class="text-base font-bold text-white">$3,950</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span class="block text-xs text-slate-400">Recommended Offer</span>
+            <span class="text-base font-bold text-emerald-400">$3,700</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span class="block text-xs text-slate-400">Walk Away Price</span>
+            <span class="text-base font-bold text-amber-400">$4,000</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span class="block text-xs text-slate-400">Potential Hidden Costs</span>
+            <span class="text-base font-bold text-rose-400">$325 (Maintenance/Comps)</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 sm:col-span-2">
+            <span class="block text-xs text-slate-400">Engine Confidence</span>
+            <span class="text-base font-bold text-blue-400">🟢 94% Accuracy Score</span>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-800 text-sm">
-          <div class="p-3 rounded-xl bg-slate-950/50 border border-slate-800">
-            <span class="block text-[11px] text-slate-400">Fair Market Value</span>
-            <span class="font-bold text-white">$2,450</span>
-          </div>
-          <div class="p-3 rounded-xl bg-slate-950/50 border border-slate-800">
-            <span class="block text-[11px] text-slate-400">Best Opening Offer</span>
-            <span class="font-bold text-emerald-400">$2,250</span>
-          </div>
-          <div class="p-3 rounded-xl bg-slate-950/50 border border-slate-800">
-            <span class="block text-[11px] text-slate-400">Walk Away Above</span>
-            <span class="font-bold text-amber-400">$2,500</span>
-          </div>
-          <div class="p-3 rounded-xl bg-slate-950/50 border border-slate-800">
-            <span class="block text-[11px] text-slate-400">Potential Repairs</span>
-            <span class="font-bold text-slate-300">$150 (Gasket/Pressure)</span>
-          </div>
-        </div>
       </div>
     </div>
 
     <div id="results" class="hidden space-y-6">
-      
       <div class="glass-card p-6 sm:p-8 rounded-2xl border border-emerald-500/30 glow-green space-y-6">
         <div class="flex items-center justify-between">
           <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            VERDICT: GREAT BUY
+            ANALYSIS COMPLETE
           </span>
           <span class="text-xs font-semibold text-amber-400 bg-amber-400/10 px-3 py-1 rounded-lg border border-amber-400/20">
-            🟡 Confidence: High
+            🟡 High Confidence
           </span>
         </div>
 
         <div class="space-y-1">
           <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Estimated Savings</p>
           <div class="text-4xl sm:text-5xl font-black text-emerald-400 tracking-tight">
-            Save $180 <span class="text-lg sm:text-xl font-normal text-slate-400">(15% below market)</span>
+            Save $250 <span class="text-lg sm:text-xl font-normal text-slate-400">(6% below comps)</span>
           </div>
-          <p class="text-sm text-slate-300">Buy with confidence • Listed below private seller average in your area.</p>
         </div>
       </div>
-
-      <div class="glass-card p-6 sm:p-8 rounded-2xl border border-blue-500/30 space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-          <h2 class="text-base font-bold text-white flex items-center gap-2">
-            🎯 Deal Coach Buying Guidance
-          </h2>
-          <span class="text-xs text-blue-400 font-mono">Personalized Strategy</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-          
-          <div class="space-y-4">
-            <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
-              <span class="text-xs text-slate-400 uppercase font-semibold">Should You Buy It?</span>
-              <p class="text-base font-bold text-emerald-400">Yes, with negotiation.</p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-                <span class="block text-xs text-slate-400">Best Opening Offer</span>
-                <span class="text-lg font-bold text-emerald-400">$2,250</span>
-              </div>
-              <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-                <span class="block text-xs text-slate-400">Maximum Walk-Away</span>
-                <span class="text-lg font-bold text-amber-400">$2,500</span>
-              </div>
-            </div>
-
-            <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
-              <span class="text-xs text-slate-400 uppercase font-semibold">Biggest Risk Signals</span>
-              <p class="text-xs text-slate-300">• No service history mentioned<br>• Missing original box/papers</p>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-              <span class="text-xs text-slate-400 uppercase font-semibold">Questions to Ask Seller</span>
-              <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-                <li>Has this been water-pressure tested recently?</li>
-                <li>Do you have the extra bracelet links?</li>
-                <li>Are you open to meeting at a local police station?</li>
-              </ul>
-            </div>
-
-            <div class="p-4 rounded-xl bg-blue-950/30 border border-blue-500/20 space-y-2">
-              <span class="text-xs text-blue-400 uppercase font-semibold">Ready-to-Copy Seller Message</span>
-              <p class="text-xs text-slate-200 bg-slate-950/80 p-3 rounded-lg border border-slate-800 font-mono">
-                "Hi! Interested in the item. Based on recent comp sales, I can do $2,250 cash today and pick up whenever convenient for you. Let me know!"
-              </p>
-              <button class="w-full py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5">
-                <i class="fa-regular fa-copy"></i> Copy Negotiation Script
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <button class="py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs gap-2 flex items-center justify-center transition-all">
-          📋 Copy Offer
-        </button>
-        <button class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs gap-2 flex items-center justify-center border border-slate-700 transition-all">
-          💬 Message
-        </button>
-        <button class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs gap-2 flex items-center justify-center border border-slate-700 transition-all">
-          ❤️ Save Deal
-        </button>
-        <button class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs gap-2 flex items-center justify-center border border-slate-700 transition-all">
-          🔄 Compare Another
-        </button>
-      </div>
-
-      <p class="text-center text-xs text-slate-500">
-        🛡️ Valuation derived from live market comp data in your region.
-      </p>
-
     </div>
 
   </main>
 
   <footer class="text-center py-6 border-t border-slate-900 text-xs text-slate-500">
-    © 2026 DealTough Engine • Private Market Intelligence
+    © 2026 DealTough Engine • AI Buying Intelligence
   </footer>
+
+  <script>
+    function loadSample(platform) {
+      const input = document.getElementById('listing-text');
+      if (platform === 'fb') {
+        input.value = "Facebook Marketplace: 2018 TAG Heuer Aquaracer Automatic, great condition, lightly used. Asking $2,800.";
+      } else if (platform === 'ebay') {
+        input.value = "eBay Listing: Vintage Casio G-Shock Frogman, clean bezel, missing outer box. Buy It Now $450.";
+      } else if (platform === 'offerup') {
+        input.value = "OfferUp: 2002 Toyota Tacoma side marker switch & accessories. Asking $120 cash.";
+      } else if (platform === 'craigslist') {
+        input.value = "Craigslist: 1987 Chris Craft 36-foot vessel components & marine hardware. Asking $3,200.";
+      }
+    }
+  </script>
 
 </body>
 </html>

@@ -3,155 +3,178 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DealTough — Know Before You Buy</title>
+  <title>DealTough — Market Valuation & Deal Scoring Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body {
       background: #090d16;
-      background-image: radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.25) 0px, transparent 50%),
-                        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.15) 0px, transparent 50%);
+      background-image: 
+        radial-gradient(at 10% 10%, rgba(37, 99, 235, 0.18) 0px, transparent 40%),
+        radial-gradient(at 90% 90%, rgba(16, 185, 129, 0.12) 0px, transparent 40%);
       background-attachment: fixed;
       color: #f8fafc;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
     .glass-card {
       background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
+    .glass-input {
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .glow-blue {
+      box-shadow: 0 0 35px -5px rgba(37, 99, 235, 0.25);
+    }
     .glow-green {
-      box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.2);
+      box-shadow: 0 0 35px -5px rgba(16, 185, 129, 0.25);
     }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between antialiased">
 
-  <header class="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md sticky top-0 z-50">
-    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-      <div class="flex items-center space-x-2">
-        <div class="bg-blue-600 text-white font-black text-sm px-2 py-1 rounded-md tracking-wider">DT</div>
-        <span class="font-bold text-lg text-white">DealTough</span>
-        <span class="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono">v1.0</span>
+  <header class="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-blue-600 text-white font-black text-sm px-2.5 py-1 rounded-lg tracking-wider shadow-md shadow-blue-600/30">DT</div>
+        <span class="font-bold text-xl text-white tracking-tight">DealTough</span>
+        <span class="text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">PRO v1.0</span>
       </div>
-      <button class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 font-medium transition-colors">
-        Sign In
-      </button>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-slate-400 hidden sm:inline-flex items-center gap-1.5">
+          <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Engine Active
+        </span>
+        <button class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl border border-slate-700 font-medium transition-all">
+          Sign In
+        </button>
+      </div>
     </div>
   </header>
 
-  <main class="max-w-3xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
+  <main class="max-w-4xl mx-auto px-4 py-10 flex-1 w-full space-y-8">
     
-    <div class="text-center space-y-2">
-      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-        Know Before You Buy
+    <div class="text-center space-y-3">
+      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+        <i class="fa-solid fa-shield-halved text-xs"></i> Instant AI Valuation & Comps Analysis
+      </span>
+      <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white max-w-2xl mx-auto leading-tight">
+        Never Overpay on Marketplace Deals Again
       </h1>
-      <p class="text-slate-400 text-sm max-w-md mx-auto">
-        Upload marketplace screenshots or details for instant valuation, hidden cost estimates, and deal scoring.
+      <p class="text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
+        Paste a listing description, link, or upload screenshots. Get fair market value, hidden costs, and your walk-away price in seconds.
       </p>
     </div>
 
-    <div class="glass-card rounded-2xl p-6 shadow-xl space-y-5">
+    <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-2xl glow-blue space-y-6">
+      
       <div>
-        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-          📷 Upload Marketplace Photos
+        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+          📸 Upload Listing Screenshots
         </label>
-        <div class="border-2 border-dashed border-slate-700 hover:border-blue-500/50 rounded-xl p-6 text-center cursor-pointer transition-colors bg-slate-950/40">
-          <i class="fa-solid fa-camera text-slate-400 text-2xl mb-2"></i>
-          <p class="text-sm font-medium text-slate-200">Tap to select screenshots or drag & drop</p>
-          <p class="text-xs text-slate-500 mt-1">Auto-detects item, condition & market value</p>
+        <div class="border-2 border-dashed border-slate-700/80 hover:border-blue-500/80 rounded-2xl p-8 text-center cursor-pointer transition-all glass-input group">
+          <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+          </div>
+          <p class="text-sm font-semibold text-slate-200">Drop Marketplace Screenshots Here</p>
+          <p class="text-xs text-slate-400 mt-1">Auto-extracts price, item condition, title & description</p>
         </div>
       </div>
 
       <div>
-        <label for="listing-text" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-          Listing Details or URL
+        <label for="listing-text" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+          Or Paste Listing Details / Description
         </label>
-        <textarea id="listing-text" rows="3" placeholder="Paste price, condition, or listing description..." class="w-full bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
+        <textarea id="listing-text" rows="3" placeholder="e.g. 2018 TAG Heuer Aquaracer, great condition, asking $1,200..." class="w-full glass-input border border-slate-800 rounded-xl p-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
       </div>
 
-      <button id="btn-analyze" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 text-sm">
+      <button id="btn-analyze" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2.5 text-base active:scale-[0.99]">
         <i class="fa-solid fa-bolt"></i>
-        Analyze Deal
+        Analyze Deal Now
       </button>
+
+      <div class="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-800/60">
+        <div class="text-[11px] text-slate-400"><i class="fa-solid fa-check text-emerald-400 mr-1"></i> Live Comps</div>
+        <div class="text-[11px] text-slate-400"><i class="fa-solid fa-check text-emerald-400 mr-1"></i> Hidden Cost Check</div>
+        <div class="text-[11px] text-slate-400"><i class="fa-solid fa-check text-emerald-400 mr-1"></i> Offer Generator</div>
+      </div>
     </div>
 
     <div id="results" class="hidden space-y-6">
       
-      <div class="glass-card p-6 rounded-2xl border border-emerald-500/30 glow-green">
-        <div class="flex items-center justify-between mb-4">
-          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+      <div class="glass-card p-6 sm:p-8 rounded-2xl border border-emerald-500/30 glow-green space-y-6">
+        <div class="flex items-center justify-between">
+          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span id="badge-label">GREAT BUY</span>
+            GREAT BUY
           </span>
-          
-          <div class="inline-flex items-center gap-1.5 text-xs text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md border border-amber-400/20">
-            <span>🟡 Confidence: High</span>
-          </div>
+          <span class="text-xs font-semibold text-amber-400 bg-amber-400/10 px-3 py-1 rounded-lg border border-amber-400/20">
+            🟡 High Confidence
+          </span>
         </div>
 
-        <div class="space-y-1 mb-6">
-          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Estimated Savings</p>
-          <div class="text-4xl font-extrabold text-emerald-400 tracking-tight">
-            <span id="savings-amount">Save $180</span> 
-            <span id="savings-percent" class="text-lg font-normal text-slate-400">(15% below market)</span>
+        <div class="space-y-1">
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Estimated Savings</p>
+          <div class="text-4xl sm:text-5xl font-black text-emerald-400 tracking-tight">
+            Save $180 <span class="text-lg sm:text-xl font-normal text-slate-400">(15% below market)</span>
           </div>
-          <p id="intelligence-summary" class="text-sm text-slate-300">Buy with confidence • Below typical private seller average</p>
+          <p class="text-sm text-slate-300">Priced below private seller average in your region.</p>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-slate-800">
-          <div class="p-3 rounded-xl bg-slate-950/50 border border-slate-800">
-            <span class="block text-xs text-slate-400">Fair Market Range</span>
-            <span id="market-range" class="text-base font-bold text-white">$4,500 – $5,200</span>
+        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800/80">
+          <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span class="block text-xs font-medium text-slate-400">Fair Market Range</span>
+            <span class="text-lg font-bold text-white">$4,500 – $5,200</span>
           </div>
-          <div class="p-3 rounded-xl bg-slate-950/50 border border-slate-800">
-            <span class="block text-xs text-slate-400">Walk-Away Price</span>
-            <span id="walk-away-price" class="text-base font-bold text-slate-200">$4,850</span>
+          <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span class="block text-xs font-medium text-slate-400">Walk-Away Price</span>
+            <span class="text-lg font-bold text-slate-200">$4,850</span>
           </div>
         </div>
       </div>
 
-      <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
-        <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">DealTough Assessment</h3>
-        
+      <div class="glass-card p-6 rounded-2xl space-y-4">
+        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">DealTough Score Breakdown</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/40 border border-slate-800/80">
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-950/50 border border-slate-800">
             <span class="text-slate-400">Value vs. Comps</span>
-            <span id="score-value" class="font-medium text-emerald-400">+15 pts</span>
+            <span class="font-bold text-emerald-400">+15 pts</span>
           </div>
-          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/40 border border-slate-800/80">
-            <span class="text-slate-400">Risk Assessment</span>
-            <span id="score-risk" class="font-medium text-emerald-400">Low Risk</span>
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-950/50 border border-slate-800">
+            <span class="text-slate-400">Risk Signals</span>
+            <span class="font-bold text-emerald-400">Low Risk</span>
           </div>
-          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/40 border border-slate-800/80">
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-950/50 border border-slate-800">
             <span class="text-slate-400">Total Out-of-Pocket</span>
-            <span id="true-cost" class="font-medium text-white">$4,350</span>
+            <span class="font-bold text-white">$4,350</span>
           </div>
-          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/40 border border-slate-800/80">
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-950/50 border border-slate-800">
             <span class="text-slate-400">Negotiation Power</span>
-            <span id="negotiation-power" class="font-medium text-blue-400">Moderate</span>
+            <span class="font-bold text-blue-400">Moderate</span>
           </div>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <button id="btn-copy-offer" class="flex flex-col items-center justify-center p-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs gap-1.5 transition-colors">
-          📋 Copy Offer
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <button class="py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs gap-2 flex items-center justify-center transition-all">
+          <i class="fa-regular fa-copy"></i> Copy Offer
         </button>
-        <button id="btn-message" class="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs gap-1.5 border border-slate-700 transition-colors">
-          💬 Message
+        <button class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs gap-2 flex items-center justify-center border border-slate-700 transition-all">
+          <i class="fa-regular fa-comment"></i> Message
         </button>
-        <button id="btn-save" class="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs gap-1.5 border border-slate-700 transition-colors">
-          ❤️ Save
+        <button class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs gap-2 flex items-center justify-center border border-slate-700 transition-all">
+          <i class="fa-regular fa-heart text-rose-400"></i> Save
         </button>
-        <button id="btn-reset" class="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs gap-1.5 border border-slate-700 transition-colors">
-          🔄 New Search
+        <button class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs gap-2 flex items-center justify-center border border-slate-700 transition-all">
+          <i class="fa-solid fa-rotate-right"></i> Reset
         </button>
       </div>
 
-      <p class="text-center text-xs text-slate-500 pt-2 flex items-center justify-center gap-1.5">
-        🛡️ Valuation derived from live market comps in your area.
+      <p class="text-center text-xs text-slate-500">
+        🛡️ Valuation derived from 27 live marketplace comps in your area.
       </p>
 
     </div>
@@ -159,7 +182,7 @@
   </main>
 
   <footer class="text-center py-6 border-t border-slate-900 text-xs text-slate-500">
-    © 2026 DealTough Engine
+    © 2026 DealTough Engine • Private Market Intelligence
   </footer>
 
 </body>

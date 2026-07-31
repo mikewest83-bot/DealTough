@@ -9,9 +9,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const prisma = new PrismaClient();
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || "change-this-secret"
+);
+
+const COOKIE_NAME = "dealtough_session";
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
+app.use(cookieParser());
 
 // Resolve public directory dynamically across dev & production build environments
 const possiblePublicPaths = [

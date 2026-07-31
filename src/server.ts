@@ -165,7 +165,6 @@ app.post("/api/analyze", (req: Request, res: Response): void => {
     res.status(500).json({ error: "Failed to process deal analysis" });
   }
 });
-
 // 4. Catch-all Root / Frontend Fallback
 app.get("*", (_req: Request, res: Response) => {
   const indexPath = path.join(publicPath, "index.html");

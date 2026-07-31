@@ -47,6 +47,58 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
+app.post("/api/auth/login", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      res.status(400).json({
+        error: "Email and password are required."
+      });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email: email.toLowerCase()
+      }
+    });
+
+    if (!user) {
+      res.status(401).json({
+        error: "Incorrect email or password."
+      });
+      return;
+    }
+
+    const passwordMatches = await bcrypt.compare(
+      password,
+      user.passwordHash
+    );
+
+    if (!passwordMatches) {
+      res.status(401).json({
+        error: "Incorrect email or password."
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        plan: user.plan
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Unable to sign in."
+    });
+  }
+});
+
 if (!email || !password) {
   res.status(400).json({
     error: "Email and password are required."

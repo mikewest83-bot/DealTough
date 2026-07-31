@@ -41,21 +41,23 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({
-        error: "Email and password are required."
-      });
-    }
+if (!email || !password) {
+  res.status(400).json({
+    error: "Email and password are required."
+  });
+  return;
+}
 
     const existingUser = await prisma.user.findUnique({
       where: { email: email.toLowerCase() }
     });
 
-    if (existingUser) {
-      return res.status(409).json({
-        error: "Account already exists."
-      });
-    }
+if (existingUser) {
+  res.status(409).json({
+    error: "Account already exists."
+  });
+  return;
+}
 
     const passwordHash = await bcrypt.hash(password, 12);
 

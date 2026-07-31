@@ -59,7 +59,30 @@ function showPanel(mode){const login=mode==="login";loginTab.classList.toggle("a
 function openAuth(mode="login"){modal.classList.add("visible");modal.setAttribute("aria-hidden","false");showPanel(mode)}
 function closeAuth(){modal.classList.remove("visible");modal.setAttribute("aria-hidden","true")}
 function signedIn(user){currentUser=user;accountLabel.textContent=user.email;accountLabel.classList.add("visible");authButton.textContent="Signed In";planMessage.textContent=(user.plan==="plus"?"Plus plan":"Free plan")+" â¢ "+user.email;localStorage.setItem("dealtough_user",JSON.stringify(user))}
-try{const saved=JSON.parse(localStorage.getItem("dealtough_user")||"null");if(saved?.email)signedIn(saved)}catch{}
+async function restoreSession() {
+  try {
+    const response = await fetch("/api/auth/me", {
+      credentials: "same-origin"
+    });
+
+    if (!response.ok) {
+      currentUser = null;
+      localStorage.removeItem("dealtough_user");
+      accountLabel.textContent = "";
+      accountLabel.classList.remove("visible");
+      authButton.textContent = "Sign In";
+      planMessage.textContent = "Analyze your first deal now";
+      return;
+    }
+
+    const data = await response.json();
+    signedIn(data.user);
+  } catch (error) {
+    console.error("Session check failed:", error);
+  }
+}
+
+restoreSession();
 async function auth(endpoint,email,password,status,button){clearStatus(status);const original=button.textContent;try{button.disabled=true;button.textContent=endpoint.endsWith("register")?"Creating Account...":"Signing In...";const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({email,password})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||"Unable to complete this request.");signedIn(data.user);setStatus(status,endpoint.endsWith("register")?"Account created successfully.":"Signed in successfully.","success");setTimeout(closeAuth,600)}catch(e){setStatus(status,e instanceof Error?e.message:"Something went wrong.","error")}finally{button.disabled=false;button.textContent=original}}
 async function startCheckout(endpoint,button){if(!currentUser){openAuth("login");return}const original=button.textContent;try{button.disabled=true;button.textContent="Opening Checkout...";const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:"{}"});const c=r.headers.get("content-type")||"",data=c.includes("application/json")?await r.json():{error:await r.text()};if(!r.ok)throw new Error(data.error||"Unable to open checkout.");if(!data.url)throw new Error("Stripe Checkout URL was not returned.");window.location.href=data.url}catch(e){alert(e instanceof Error?e.message:"Unable to open checkout.");button.disabled=false;button.textContent=original}}
 authButton.addEventListener("click",()=>currentUser?alert("Signed in as "+currentUser.email):openAuth("login"));document.getElementById("create-account-button").addEventListener("click",()=>openAuth("register"));document.getElementById("close-auth").addEventListener("click",closeAuth);modal.addEventListener("click",e=>{if(e.target===modal)closeAuth()});loginTab.addEventListener("click",()=>showPanel("login"));registerTab.addEventListener("click",()=>showPanel("register"));

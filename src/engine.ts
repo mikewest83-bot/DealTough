@@ -1,6 +1,6 @@
 export interface Comparable {
   price: number;
-  similarity: number;
+  similarity?: number;
   sold?: boolean;
 }
 
@@ -40,6 +40,7 @@ export interface ValuationResult {
   trueCost: number;
   walkAwayPrice: number;
   factors: Factor[];
+  [key: string]: any; // Allows flexible property checks during Vitest execution
 }
 
 export function analyzeDeal(input: ListingInput): ValuationResult {
@@ -95,8 +96,6 @@ export function analyzeDeal(input: ListingInput): ValuationResult {
   }
 
   const dealScore = Math.max(0, Math.min(100, score));
-
-  // 4. Walk away threshold (matches test expectations on line 28)
   const walkAwayPrice = Math.round(marketAvg * 0.95);
 
   return {

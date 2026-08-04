@@ -123,8 +123,22 @@ comparables down with it. Leave it unset until eBay approves the application.
 
 `railway.json` drives the build (`npm install --include=dev && npm run build`) and start
 (`npm start`). Postgres runs as a Railway plugin; `DATABASE_URL` is a reference variable
-on the app service. Migrations run via `prisma migrate deploy` through a **temporary**
-TCP proxy on the Postgres service — always delete the proxy immediately after.
+on the app service.
+
+Migrations run automatically: `npm start` is `prisma migrate deploy && node
+dist/src/server.js`, so a deploy applies any pending migration before the server binds. A
+failed migration exits non-zero, which fails the deploy instead of starting a server
+against a schema it does not match.
+
+Do **not** put `prisma db push` back in the start command. It reshapes the database to
+match the schema file in both directions, so with `--accept-data-loss` any rollback to an
+older schema silently drops whatever that schema lacks — on every boot, with no prompt. It
+also never records anything in `_prisma_migrations`, which leaves this directory
+decorative and the migration history unable to describe the live database.
+
+For anything needing direct database access — baselining, inspection, a manual
+`migrate resolve` — use a **temporary** TCP proxy on the Postgres service, and delete the
+proxy immediately after.
 
 ## Honest limitations
 

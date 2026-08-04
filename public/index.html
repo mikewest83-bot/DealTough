@@ -9,20 +9,20 @@
 <style>
 :root{color-scheme:dark;--bg:#07101d;--surface:#101b2c;--surface2:#16243a;--text:#f8fafc;--muted:#9eabc0;--orange:#f97316;--orange2:#fb923c;--border:rgba(255,255,255,.1);--shadow:0 24px 70px rgba(0,0,0,.34)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:radial-gradient(circle at 85% 0%,rgba(249,115,22,.18),transparent 30%),linear-gradient(180deg,#07101d 0%,#0a1422 48%,#07101d 100%);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-button,input,select{font:inherit}button{cursor:pointer}.page-shell{width:min(1160px,calc(100% - 32px));margin:auto}.site-header{position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(7,16,29,.82);backdrop-filter:blur(18px)}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.page-shell{width:min(1160px,calc(100% - 32px));margin:auto}.site-header{position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(7,16,29,.82);backdrop-filter:blur(18px)}
 .header-inner{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:18px}.brand{display:flex;align-items:center;gap:12px;color:var(--text);text-decoration:none;font-size:1.25rem;font-weight:900}.brand-mark{width:44px;height:44px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(135deg,var(--orange),var(--orange2));color:#101010;font-weight:950}
 .header-actions{display:flex;align-items:center;gap:10px}.account-label{display:none;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#dce4ee;font-size:.84rem;font-weight:750}.account-label.visible{display:block}.btn{min-height:42px;padding:10px 14px;border-radius:12px;font-weight:800;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.035)}.btn.primary,.submit{border:0;background:var(--orange);color:#121212}.btn.primary:hover,.submit:hover{background:var(--orange2)}.btn:disabled,.submit:disabled{opacity:.62;cursor:wait}
 .hero{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(340px,.94fr);gap:46px;align-items:center;padding:76px 0 54px}.eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:18px;color:#fdba74;font-size:.82rem;font-weight:850;letter-spacing:.11em;text-transform:uppercase}.eyebrow:before{content:"";width:28px;height:2px;background:var(--orange)}
 h1{margin:0;max-width:760px;font-size:clamp(3rem,7vw,5.8rem);line-height:.97;letter-spacing:-.065em}.highlight{color:var(--orange)}.hero-copy{max-width:670px;margin:24px 0 0;color:var(--muted);font-size:1.08rem;line-height:1.75}.trust-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}.trust-chip{padding:10px 13px;border:1px solid var(--border);border-radius:999px;color:#d8e0ea;background:rgba(255,255,255,.025);font-size:.83rem;font-weight:700}
 .card{padding:28px;border:1px solid var(--border);border-radius:26px;background:rgba(16,27,44,.9);box-shadow:var(--shadow)}.plan-strip{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px;padding:13px 14px;border:1px solid rgba(249,115,22,.25);border-radius:14px;background:rgba(249,115,22,.08)}.plan-strip strong{display:block}.plan-strip span{color:#fdba74;font-size:.78rem}
-.card h2{margin:0 0 8px;font-size:1.55rem}.card-copy{margin:0 0 24px;color:var(--muted);font-size:.93rem;line-height:1.55}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{margin-bottom:16px}.field.full{grid-column:1/-1}.field label{display:block;margin-bottom:8px;font-size:.88rem;font-weight:800}.field input,.field select{width:100%;min-height:52px;padding:14px 15px;border:1px solid var(--border);border-radius:12px;outline:none;color:var(--text);background:#0b1626}.field input:focus,.field select:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(249,115,22,.14)}
+.card h2{margin:0 0 8px;font-size:1.55rem}.card-copy{margin:0 0 24px;color:var(--muted);font-size:.93rem;line-height:1.55}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{margin-bottom:16px}.field.full{grid-column:1/-1}.field label{display:block;margin-bottom:8px;font-size:.88rem;font-weight:800}.field input,.field select,.field textarea{width:100%;min-height:52px;padding:14px 15px;border:1px solid var(--border);border-radius:12px;outline:none;color:var(--text);background:#0b1626}.field textarea{min-height:190px;resize:vertical;line-height:1.55}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(249,115,22,.14)}
 .upload{padding:16px;border:1px dashed rgba(255,255,255,.2);border-radius:12px;background:#0b1626}.upload input{min-height:auto;padding:0;border:0}.submit{width:100%;min-height:54px;padding:14px 18px;border-radius:12px;font-weight:900}.note{margin:12px 0 0;color:#6f7f96;text-align:center;font-size:.76rem}
-.status{display:none;margin-top:15px;padding:13px 14px;border-radius:12px;font-size:.88rem}.status.visible{display:block}.status.error{color:#fecaca;border:1px solid rgba(239,68,68,.28);background:rgba(239,68,68,.1)}.status.success{color:#bbf7d0;border:1px solid rgba(34,197,94,.28);background:rgba(34,197,94,.1)}
+.status{display:none;margin-top:15px;padding:13px 14px;border-radius:12px;font-size:.88rem}.status.visible{display:block}.status.error{color:#fecaca;border:1px solid rgba(239,68,68,.28);background:rgba(239,68,68,.1)}.status.success{color:#bbf7d0;border:1px solid rgba(34,197,94,.28);background:rgba(34,197,94,.1)}.status.info{color:#bfdbfe;border:1px solid rgba(59,130,246,.28);background:rgba(59,130,246,.1)}
 .section{padding:64px 0}.kicker{margin:0 0 10px;color:#fdba74;font-size:.78rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.section-title{margin:0 0 14px;font-size:clamp(2rem,4.5vw,3.6rem);letter-spacing:-.05em}.section-copy{max-width:680px;margin:0 0 28px;color:var(--muted);line-height:1.7}
 .grid3,.pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.feature,.result,.price-card,.negotiation{border:1px solid var(--border);background:var(--surface)}.feature{padding:24px;border-radius:18px}.feature b{display:block;margin-bottom:9px}.feature p{margin:0;color:var(--muted);line-height:1.6;font-size:.9rem}
 #results{display:none}#results.visible{display:block}.results-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.result{min-height:150px;padding:21px;border-radius:18px}.result span{display:block;margin-bottom:12px;color:var(--muted);font-size:.75rem;font-weight:850;letter-spacing:.09em;text-transform:uppercase}.result strong{display:block;font-size:1.65rem}.result p{margin:10px 0 0;color:var(--muted);font-size:.84rem;line-height:1.5}.wide{grid-column:span 2}
-.negotiation{margin-top:18px;padding:26px;border-radius:20px}.negotiation-head{display:flex;justify-content:space-between;gap:18px;margin-bottom:15px}.script{padding:18px;border-radius:14px;color:#d8e0ea;background:#091421;line-height:1.65}
-.price-card{display:flex;flex-direction:column;padding:26px;border-radius:20px}.price-card.featured{border-color:rgba(249,115,22,.55);transform:translateY(-8px)}.price{margin:8px 0 18px;font-size:2.35rem;font-weight:950}.price small{color:var(--muted);font-size:.82rem}.price-card ul{padding:0;margin:0 0 24px;list-style:none}.price-card li{margin:11px 0;padding-left:22px;color:#dce4ee}.price-card li:before{content:"â";margin-left:-22px;margin-right:9px;color:#86efac}.price-card .btn{margin-top:auto;width:100%;min-height:50px}
+.negotiation{margin-top:18px;padding:26px;border-radius:20px}.negotiation-head{display:flex;justify-content:space-between;gap:18px;margin-bottom:15px}.script{padding:18px;border-radius:14px;color:#d8e0ea;background:#091421;line-height:1.65;white-space:pre-wrap}
+.price-card{display:flex;flex-direction:column;padding:26px;border-radius:20px}.price-card.featured{border-color:rgba(249,115,22,.55);transform:translateY(-8px)}.price{margin:8px 0 18px;font-size:2.35rem;font-weight:950}.price small{color:var(--muted);font-size:.82rem}.price-card ul{padding:0;margin:0 0 24px;list-style:none}.price-card li{margin:11px 0;padding-left:22px;color:#dce4ee}.price-card li:before{content:"\2713";margin-left:-22px;margin-right:9px;color:#86efac}.price-card .btn{margin-top:auto;width:100%;min-height:50px}
 .modal-backdrop{position:fixed;inset:0;z-index:100;display:none;place-items:center;padding:18px;background:rgba(2,8,18,.78);backdrop-filter:blur(8px)}.modal-backdrop.visible{display:grid}.modal{width:min(460px,100%);padding:26px;border:1px solid var(--border);border-radius:22px;background:#101b2c;box-shadow:var(--shadow)}.modal-head{display:flex;justify-content:space-between;gap:16px;margin-bottom:22px}.modal-head h2{margin:0 0 5px}.modal-head p{margin:0;color:var(--muted);font-size:.9rem}.close-btn{width:38px;height:38px;padding:0;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.03);color:var(--text);font-size:1.3rem}.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;padding:5px;border:1px solid var(--border);border-radius:13px;background:#0b1626}.auth-tab{min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-weight:850}.auth-tab.active{background:var(--surface2);color:var(--text)}.auth-panel{display:none}.auth-panel.active{display:block}
 footer{margin-top:40px;padding:30px 0 42px;border-top:1px solid var(--border);color:#748299;text-align:center;font-size:.82rem}
 @media(max-width:920px){.hero{grid-template-columns:1fr;padding-top:52px}.grid3,.pricing{grid-template-columns:1fr}.price-card.featured{transform:none}.results-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.page-shell{width:min(100% - 22px,1160px)}.header-actions .btn.primary{display:none}.account-label{max-width:105px}.hero{gap:30px;padding:38px 0 28px}h1{font-size:clamp(2.65rem,15vw,4.4rem)}.card{padding:21px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.results-grid{grid-template-columns:1fr}.wide{grid-column:auto}.section{padding:44px 0}}
@@ -33,67 +33,257 @@ footer{margin-top:40px;padding:30px 0 42px;border-top:1px solid var(--border);co
 <main>
 <section class="page-shell hero">
 <div><div class="eyebrow">Buy smarter. Negotiate tougher.</div><h1>Know the deal <span class="highlight">before it costs you.</span></h1><p class="hero-copy">DealTough evaluates asking price, estimated market value, hidden costs, risk, and negotiation leverage so you can protect your money before you buy.</p><div class="trust-row"><span class="trust-chip">Deal score</span><span class="trust-chip">Fair-market value</span><span class="trust-chip">Opening offer</span><span class="trust-chip">Walk-away price</span></div></div>
-<section class="card"><div class="plan-strip"><div><strong>Free preview</strong><span id="plan-message">Analyze your first deal now</span></div><button class="btn" type="button" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Upgrade</button></div><h2>Analyze a listing</h2><p class="card-copy">Enter the key numbers and DealTough will do the rest.</p>
-<form id="analyze-form"><div class="form-grid"><div class="field full"><label for="listing-url">Listing URL</label><input id="listing-url" type="url" placeholder="https://facebook.com/marketplace/..."></div><div class="field"><label for="asking-price">Asking price</label><input id="asking-price" type="number" min="1" step="1" placeholder="5000" required></div><div class="field"><label for="estimated-market-value">Estimated market value</label><input id="estimated-market-value" type="number" min="1" step="1" placeholder="6200" required></div><div class="field"><label for="category">Category</label><select id="category"><option value="vehicle">Vehicle</option><option value="electronics">Electronics</option><option value="tools">Tools</option><option value="furniture">Furniture</option><option value="outdoor-equipment">Outdoor equipment</option><option value="other">Other</option></select></div><div class="field"><label for="deal-title">Deal title</label><input id="deal-title" type="text" placeholder="2019 Ford F-150"></div><div class="field full"><label for="listing-image">Screenshot (optional)</label><div class="upload"><input id="listing-image" type="file" accept="image/jpeg,image/png,image/webp"></div></div></div><button class="submit" type="submit">Analyze This Deal</button><p class="note">Screenshot reading will be activated in the next AI-vision phase.</p><div id="form-status" class="status" role="status"></div></form></section>
-</section>
-<section class="page-shell section"><p class="kicker">Built to protect buyers</p><h2 class="section-title">More than a price checker.</h2><p class="section-copy">DealTough helps you avoid bad purchases, uncover the real cost, and negotiate from a position of confidence.</p><div class="grid3"><article class="feature"><b>Fair value analysis</b><p>Compare the seller's number with your market estimate and receive a clear verdict.</p></article><article class="feature"><b>Risk and cost protection</b><p>Surface warning signs, hidden costs, repairs, fees, and reasons to slow down.</p></article><article class="feature"><b>Negotiation leverage</b><p>Get an opening offer, maximum price, seller questions, and a ready-to-send message.</p></article></div></section>
-<section class="page-shell section" id="results"><p class="kicker">Your analysis</p><h2 class="section-title">DealTough recommendation</h2><div class="results-grid"><article class="result"><span>Deal score</span><strong id="deal-score">â</strong><p id="deal-score-note">Analysis confidence will appear here.</p></article><article class="result"><span>Verdict</span><strong id="verdict">Waiting</strong><p id="verdict-note">DealTough will classify the opportunity.</p></article><article class="result"><span>Market value</span><strong id="market-value">â</strong><p>Estimated fair-market value.</p></article><article class="result"><span>True cost</span><strong id="true-cost">â</strong><p>Purchase price plus likely costs.</p></article><article class="result"><span>Opening offer</span><strong id="opening-offer">â</strong><p>A strong starting point.</p></article><article class="result"><span>Maximum price</span><strong id="maximum-price">â</strong><p>Your walk-away ceiling.</p></article><article class="result wide"><span>Major risks</span><strong id="risk-heading">Risks identified</strong><p id="risks">Risks will appear here.</p></article><article class="result wide"><span>Seller questions</span><strong>What to ask</strong><p id="seller-questions">Questions will appear here.</p></article></div><article class="negotiation"><div class="negotiation-head"><h3>Negotiation message</h3><button class="btn" id="copy-btn" type="button">Copy Script</button></div><div class="script" id="negotiation-script">Your customized negotiation message will appear here.</div></article></section>
-<section class="page-shell section" id="pricing"><p class="kicker">Simple pricing</p><h2 class="section-title">Protect your money for less.</h2><p class="section-copy">Start free, upgrade for regular use, or buy a small credit pack without a subscription.</p><div class="pricing"><article class="price-card"><h3>Free</h3><div class="price">$0</div><ul><li>2 analyses per month</li><li>Deal score and verdict</li><li>Basic pricing guidance</li></ul><button class="btn" id="create-account-button" type="button">Create Free Account</button></article><article class="price-card featured"><h3>DealTough Plus</h3><div class="price">$9.99 <small>/ month</small></div><ul><li>25 analyses per month</li><li>Full AI deal report</li><li>Negotiation messages</li><li>Saved deal history</li><li>Advanced risk insights</li></ul><button class="btn primary" id="plus-checkout-button" type="button">Upgrade to Plus</button></article><article class="price-card"><h3>Credit Pack</h3><div class="price">$6.99</div><ul><li>5 additional analyses</li><li>No subscription</li><li>Credits stay on your account</li></ul><button class="btn" id="credit-checkout-button" type="button">Buy 5 Analyses</button></article></div></section>
-</main>
-<footer><div class="page-shell">Â© 2026 DealTough. Know the value. Protect your money.</div></footer>
+<section class="card"><div class="plan-strip"><div><strong id="plan-name">Free preview</strong><span id="plan-message">Analyze your first deal now</span></div><button class="btn" id="plan-upgrade" type="button" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Upgrade</button></div><h2>Analyze a listing</h2><p class="card-copy">Paste the listing and DealTough reads it for you &mdash; or enter the numbers yourself.</p>
+<div class="auth-tabs"><button class="auth-tab active" id="paste-tab" type="button">Paste Listing</button><button class="auth-tab" id="manual-tab" type="button">Manual Entry</button></div>
 
-<div class="modal-backdrop" id="auth-modal" aria-hidden="true"><section class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div><h2>Welcome to DealTough</h2><p>Sign in or create your free account.</p></div><button class="close-btn" id="close-auth" type="button">Ã</button></div><div class="auth-tabs"><button class="auth-tab active" id="login-tab" type="button">Sign In</button><button class="auth-tab" id="register-tab" type="button">Create Account</button></div>
+<form class="auth-panel active" id="paste-form"><div class="form-grid"><div class="field full"><label for="listing-text">Listing text</label><textarea id="listing-text" placeholder="Paste the full listing here &mdash; title, price, description, seller notes, anything the seller wrote." required></textarea></div><div class="field"><label for="paste-category">Category</label><select id="paste-category"><option value="">Auto-detect</option><option value="vehicle">Vehicle</option><option value="electronics">Electronics</option><option value="tools">Tools</option><option value="furniture">Furniture</option><option value="outdoor_equipment">Outdoor equipment</option></select></div><div class="field"><label for="listing-photos">Photos (optional)</label><div class="upload"><input id="listing-photos" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple></div></div></div><button class="submit" type="submit">Analyze This Deal</button><p class="note">Photos are read for condition and scam signals. Up to 4, 5&nbsp;MB each.</p><div id="paste-status" class="status" role="status"></div></form>
+
+<form class="auth-panel" id="manual-form"><div class="form-grid"><div class="field"><label for="asking-price">Asking price</label><input id="asking-price" type="number" min="1" step="1" placeholder="5000" required></div><div class="field"><label for="estimated-market-value">Estimated market value</label><input id="estimated-market-value" type="number" min="1" step="1" placeholder="6200" required></div><div class="field"><label for="manual-category">Category</label><select id="manual-category"><option value="vehicle">Vehicle</option><option value="electronics">Electronics</option><option value="tools">Tools</option><option value="furniture">Furniture</option><option value="outdoor_equipment">Outdoor equipment</option></select></div><div class="field"><label for="manual-condition">Condition</label><select id="manual-condition"><option value="unknown">Unknown</option><option value="new">New</option><option value="like_new">Like new</option><option value="good">Good</option><option value="fair">Fair</option><option value="poor">Poor</option></select></div><div class="field full"><label for="deal-title">Deal title</label><input id="deal-title" type="text" placeholder="2019 Ford F-150"></div></div><button class="submit" type="submit">Score These Numbers</button><p class="note">Manual scoring is free and unlimited &mdash; it does not use an analysis credit.</p><div id="manual-status" class="status" role="status"></div></form>
+</section>
+</section>
+<section class="page-shell section"><p class="kicker">Built to protect buyers</p><h2 class="section-title">More than a price checker.</h2><p class="section-copy">DealTough helps you avoid bad purchases, uncover the real cost, and negotiate from a position of confidence.</p><div class="grid3"><article class="feature"><b>Fair value analysis</b><p>Live comparable listings set the market value, then the engine scores the asking price against it.</p></article><article class="feature"><b>Risk and cost protection</b><p>Surface warning signs, hidden costs, repairs, fees, and reasons to slow down.</p></article><article class="feature"><b>Negotiation leverage</b><p>Get an opening offer, walk-away price, seller questions, and a ready-to-send message.</p></article></div></section>
+<section class="page-shell section" id="results"><p class="kicker">Your analysis</p><h2 class="section-title" id="results-title">DealTough recommendation</h2><div class="results-grid"><article class="result"><span>Deal score</span><strong id="deal-score">&mdash;</strong><p id="deal-score-note">Analysis confidence will appear here.</p></article><article class="result"><span>Verdict</span><strong id="verdict">Waiting</strong><p id="verdict-note">DealTough will classify the opportunity.</p></article><article class="result"><span>Market value</span><strong id="market-value">&mdash;</strong><p id="market-value-note">Estimated fair-market value.</p></article><article class="result"><span>True cost</span><strong id="true-cost">&mdash;</strong><p>Purchase price plus likely costs.</p></article><article class="result"><span>Opening offer</span><strong id="opening-offer">&mdash;</strong><p id="opening-offer-note">A strong starting point.</p></article><article class="result"><span>Walk-away price</span><strong id="maximum-price">&mdash;</strong><p>Never pay more than this.</p></article><article class="result wide"><span>Major risks</span><strong id="risk-heading">Risks identified</strong><p id="risks">Risks will appear here.</p></article><article class="result wide"><span>Seller questions</span><strong>What to ask</strong><p id="seller-questions">Questions will appear here.</p></article></div><article class="negotiation"><div class="negotiation-head"><h3>Negotiation message</h3><button class="btn" id="copy-btn" type="button">Copy Script</button></div><div class="script" id="negotiation-script">Your customized negotiation message will appear here.</div></article></section>
+<section class="page-shell section" id="pricing"><p class="kicker">Simple pricing</p><h2 class="section-title">Protect your money for less.</h2><p class="section-copy">Start free, upgrade for regular use, or buy a small credit pack without a subscription.</p><div class="pricing"><article class="price-card"><h3>Free</h3><div class="price">$0</div><ul><li>2 analyses per month</li><li>Deal score and verdict</li><li>Unlimited manual scoring</li></ul><button class="btn" id="create-account-button" type="button">Create Free Account</button></article><article class="price-card featured"><h3>DealTough Plus</h3><div class="price">$9.99 <small>/ month</small></div><ul><li>25 analyses per month</li><li>Full AI deal report</li><li>Negotiation messages</li><li>Saved deal history</li><li>Advanced risk insights</li></ul><button class="btn primary" id="plus-checkout-button" type="button">Upgrade to Plus</button></article><article class="price-card"><h3>Credit Pack</h3><div class="price" id="pack-price">$5</div><ul id="pack-features"><li>10 additional analyses</li><li>No subscription</li><li>Credits stay on your account</li></ul><button class="btn" id="credit-checkout-button" type="button">Buy Credits</button></article></div></section>
+</main>
+<footer><div class="page-shell">&copy; 2026 DealTough. Know the value. Protect your money.</div></footer>
+
+<div class="modal-backdrop" id="auth-modal" aria-hidden="true"><section class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div><h2>Welcome to DealTough</h2><p>Sign in or create your free account.</p></div><button class="close-btn" id="close-auth" type="button">&times;</button></div><div class="auth-tabs"><button class="auth-tab active" id="login-tab" type="button">Sign In</button><button class="auth-tab" id="register-tab" type="button">Create Account</button></div>
 <form class="auth-panel active" id="login-form"><div class="field"><label for="login-email">Email</label><input id="login-email" type="email" autocomplete="email" required></div><div class="field"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required></div><button class="submit" type="submit">Sign In</button><div class="status" id="login-status"></div></form>
 <form class="auth-panel" id="register-form"><div class="field"><label for="register-email">Email</label><input id="register-email" type="email" autocomplete="email" required></div><div class="field"><label for="register-password">Password</label><input id="register-password" type="password" minlength="8" autocomplete="new-password" required></div><div class="field"><label for="register-confirm">Confirm password</label><input id="register-confirm" type="password" minlength="8" autocomplete="new-password" required></div><button class="submit" type="submit">Create Free Account</button><div class="status" id="register-status"></div></form></section></div>
 
 <script>
-const form=document.getElementById("analyze-form"),statusEl=document.getElementById("form-status"),results=document.getElementById("results"),copyBtn=document.getElementById("copy-btn");
-const modal=document.getElementById("auth-modal"),authButton=document.getElementById("auth-button"),accountLabel=document.getElementById("account-label"),planMessage=document.getElementById("plan-message");
-const loginTab=document.getElementById("login-tab"),registerTab=document.getElementById("register-tab"),loginForm=document.getElementById("login-form"),registerForm=document.getElementById("register-form");
-const plusCheckoutButton=document.getElementById("plus-checkout-button"),creditCheckoutButton=document.getElementById("credit-checkout-button");
-let currentUser=null;
+const $=id=>document.getElementById(id);
+const results=$("results"),copyBtn=$("copy-btn");
+const modal=$("auth-modal"),authButton=$("auth-button"),accountLabel=$("account-label"),planName=$("plan-name"),planMessage=$("plan-message"),planUpgrade=$("plan-upgrade");
+const loginTab=$("login-tab"),registerTab=$("register-tab"),loginForm=$("login-form"),registerForm=$("register-form");
+const pasteTab=$("paste-tab"),manualTab=$("manual-tab"),pasteForm=$("paste-form"),manualForm=$("manual-form");
+const pasteStatus=$("paste-status"),manualStatus=$("manual-status");
+const plusCheckoutButton=$("plus-checkout-button"),creditCheckoutButton=$("credit-checkout-button");
+const JSON_HEADERS={"Content-Type":"application/json"};
+const MAX_PHOTOS=4,MAX_PHOTO_BYTES=5*1024*1024;
+
+let currentUser=null,plusAvailable=false,creditPacks=[];
+
 const setStatus=(el,m,t)=>{el.textContent=m;el.className="status visible "+t},clearStatus=el=>{el.textContent="";el.className="status"};
-const money=v=>{if(v==null||v==="")return"â";if(typeof v==="string"&&v.trim().startsWith("$"))return v;const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(n):String(v)};
-const list=v=>Array.isArray(v)?v.join(" â¢ "):(v||"â"),text=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v??"â"};
-function showPanel(mode){const login=mode==="login";loginTab.classList.toggle("active",login);registerTab.classList.toggle("active",!login);loginForm.classList.toggle("active",login);registerForm.classList.toggle("active",!login);clearStatus(document.getElementById("login-status"));clearStatus(document.getElementById("register-status"))}
-function openAuth(mode="login"){modal.classList.add("visible");modal.setAttribute("aria-hidden","false");showPanel(mode)}
-function closeAuth(){modal.classList.remove("visible");modal.setAttribute("aria-hidden","true")}
-function signedIn(user){currentUser=user;accountLabel.textContent=user.email;accountLabel.classList.add("visible");authButton.textContent="Signed In";planMessage.textContent=(user.plan==="plus"?"Plus plan":"Free plan")+" â¢ "+user.email;localStorage.setItem("dealtough_user",JSON.stringify(user))}
-async function restoreSession() {
-  try {
-    const response = await fetch("/api/auth/me", {
-      credentials: "same-origin"
-    });
+const money=v=>{const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(n):"—"};
+const list=v=>Array.isArray(v)&&v.length?v.join(" • "):"—";
+const text=(id,v)=>{const e=$(id);if(e)e.textContent=(v===undefined||v===null||v==="")?"—":v};
 
-    if (!response.ok) {
-      currentUser = null;
-      localStorage.removeItem("dealtough_user");
-      accountLabel.textContent = "";
-      accountLabel.classList.remove("visible");
-      authButton.textContent = "Sign In";
-      planMessage.textContent = "Analyze your first deal now";
-      return;
-    }
-
-    const data = await response.json();
-    signedIn(data.user);
-  } catch (error) {
-    console.error("Session check failed:", error);
+// Account state ---------------------------------------------------------
+// /api/auth/{register,login,me} all return the account summary directly:
+// {email, plan, monthlyUsage, monthlyAllowance, analysesRemaining, creditBalance, subscriptionStatus}
+function renderAccount(){
+  if(!currentUser){
+    accountLabel.textContent="";accountLabel.classList.remove("visible");
+    authButton.textContent="Sign In";
+    planName.textContent="Free preview";
+    planMessage.textContent="Create a free account to analyze your first listing";
+    planUpgrade.style.display="";
+    return;
   }
+  accountLabel.textContent=currentUser.email;accountLabel.classList.add("visible");
+  authButton.textContent="Sign Out";
+  planName.textContent=currentUser.plan==="plus"?"DealTough Plus":"Free plan";
+  const parts=[currentUser.analysesRemaining+" of "+currentUser.monthlyAllowance+" analyses left this month"];
+  if(currentUser.creditBalance>0)parts.push(currentUser.creditBalance+" credits");
+  planMessage.textContent=parts.join(" • ");
+  planUpgrade.style.display=currentUser.plan==="plus"?"none":"";
+}
+async function refreshAccount(){
+  try{
+    const r=await fetch("/api/auth/me",{credentials:"same-origin"});
+    currentUser=r.ok?await r.json():null;
+  }catch{currentUser=null}
+  renderAccount();
+  return currentUser;
+}
+async function loadBilling(){
+  try{
+    const r=await fetch("/api/billing/packs");
+    if(r.ok){
+      const body=await r.json();
+      creditPacks=Array.isArray(body)?body:(body.packs||[]);
+      plusAvailable=Array.isArray(body)?true:Boolean(body.plusAvailable);
+    }
+  }catch{/* leave the written pricing copy in place */}
+  const pack=creditPacks[0];
+  if(pack){
+    $("pack-price").textContent=money(pack.priceCents/100);
+    $("pack-features").firstElementChild.textContent=pack.credits+" additional analyses";
+    creditCheckoutButton.textContent="Buy "+pack.credits+" Analyses";
+  }
+  if(!plusAvailable){plusCheckoutButton.disabled=true;plusCheckoutButton.textContent="Coming Soon"}
 }
 
-restoreSession();
-async function auth(endpoint,email,password,status,button){clearStatus(status);const original=button.textContent;try{button.disabled=true;button.textContent=endpoint.endsWith("register")?"Creating Account...":"Signing In...";const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({email,password})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||"Unable to complete this request.");signedIn(data.user);setStatus(status,endpoint.endsWith("register")?"Account created successfully.":"Signed in successfully.","success");setTimeout(closeAuth,600)}catch(e){setStatus(status,e instanceof Error?e.message:"Something went wrong.","error")}finally{button.disabled=false;button.textContent=original}}
-async function startCheckout(endpoint,button){if(!currentUser){openAuth("login");return}const original=button.textContent;try{button.disabled=true;button.textContent="Opening Checkout...";const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:"{}"});const c=r.headers.get("content-type")||"",data=c.includes("application/json")?await r.json():{error:await r.text()};if(!r.ok)throw new Error(data.error||"Unable to open checkout.");if(!data.url)throw new Error("Stripe Checkout URL was not returned.");window.location.href=data.url}catch(e){alert(e instanceof Error?e.message:"Unable to open checkout.");button.disabled=false;button.textContent=original}}
-authButton.addEventListener("click",()=>currentUser?alert("Signed in as "+currentUser.email):openAuth("login"));document.getElementById("create-account-button").addEventListener("click",()=>openAuth("register"));document.getElementById("close-auth").addEventListener("click",closeAuth);modal.addEventListener("click",e=>{if(e.target===modal)closeAuth()});loginTab.addEventListener("click",()=>showPanel("login"));registerTab.addEventListener("click",()=>showPanel("register"));
-plusCheckoutButton.addEventListener("click",()=>startCheckout("/api/checkout/plus",plusCheckoutButton));
-creditCheckoutButton.addEventListener("click",()=>startCheckout("/api/checkout/credits",creditCheckoutButton));
-loginForm.addEventListener("submit",e=>{e.preventDefault();auth("/api/auth/login",document.getElementById("login-email").value.trim(),document.getElementById("login-password").value,document.getElementById("login-status"),loginForm.querySelector("button"))});
-registerForm.addEventListener("submit",e=>{e.preventDefault();const p=document.getElementById("register-password").value,c=document.getElementById("register-confirm").value,s=document.getElementById("register-status");if(p!==c)return setStatus(s,"Passwords do not match.","error");auth("/api/auth/register",document.getElementById("register-email").value.trim(),p,s,registerForm.querySelector("button"))});
-function update(data){text("deal-score",data.dealScore??data.score??"â");text("deal-score-note",data.confidence?"Confidence: "+data.confidence:"Analysis completed.");text("verdict",data.verdict??data.recommendation??"Review");text("verdict-note",data.summary??data.reason??data.reasons?.[0]??"Review the details below.");text("market-value",money(data.marketValue??data.fairMarketValue??data.fairMarketRange?.max));text("true-cost",money(data.trueCost));text("opening-offer",money(data.openingOffer??data.suggestedOffer));text("maximum-price",money(data.maxPrice??data.maximumPrice??data.walkAwayPrice));text("risk-heading",data.riskLevel??data.risk_level??"Risks identified");text("risks",list(data.risks??data.redFlags??data.warnings));text("seller-questions",list(data.sellerQuestions??data.questions));text("negotiation-script",data.negotiationMessage??data.message??"No negotiation message was returned.");results.classList.add("visible")}
-form.addEventListener("submit",async e=>{e.preventDefault();clearStatus(statusEl);const askingPrice=Number(document.getElementById("asking-price").value),estimatedMarketValue=Number(document.getElementById("estimated-market-value").value),listingUrl=document.getElementById("listing-url").value.trim(),category=document.getElementById("category").value,title=document.getElementById("deal-title").value.trim()||"Untitled deal",image=document.getElementById("listing-image").files?.[0],button=form.querySelector('button[type="submit"]'),original=button.textContent;if(!Number.isFinite(askingPrice)||askingPrice<=0)return setStatus(statusEl,"Please enter a valid asking price.","error");if(!Number.isFinite(estimatedMarketValue)||estimatedMarketValue<=0)return setStatus(statusEl,"Please enter a valid estimated market value.","error");try{button.disabled=true;button.textContent="Analyzing...";const r=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({listingUrl,imageName:image?.name||null,askingPrice,estimatedMarketValue,category,title})});const c=r.headers.get("content-type")||"",data=c.includes("application/json")?await r.json():{error:await r.text()};if(!r.ok)throw new Error(data.message||data.error||"Unable to analyze this listing.");update(data);setStatus(statusEl,"Your DealTough analysis is ready.","success");results.scrollIntoView({behavior:"smooth",block:"start"})}catch(err){setStatus(statusEl,err instanceof Error?err.message:"Something went wrong. Please try again.","error")}finally{button.disabled=false;button.textContent=original}});
-copyBtn.addEventListener("click",async()=>{const value=document.getElementById("negotiation-script").textContent.trim();try{await navigator.clipboard.writeText(value);copyBtn.textContent="Copied!";setTimeout(()=>copyBtn.textContent="Copy Script",1500)}catch{alert("The message could not be copied.")}});
-const params=new URLSearchParams(window.location.search);if(params.get("payment")==="success"){setTimeout(()=>alert("Payment completed. Account access will update after the Stripe webhook is connected."),300)}else if(params.get("payment")==="canceled"){setTimeout(()=>alert("Checkout was canceled. No payment was made."),300)}
+// Auth modal ------------------------------------------------------------
+function showPanel(mode){const login=mode==="login";loginTab.classList.toggle("active",login);registerTab.classList.toggle("active",!login);loginForm.classList.toggle("active",login);registerForm.classList.toggle("active",!login);clearStatus($("login-status"));clearStatus($("register-status"))}
+function openAuth(mode){modal.classList.add("visible");modal.setAttribute("aria-hidden","false");showPanel(mode||"login")}
+function closeAuth(){modal.classList.remove("visible");modal.setAttribute("aria-hidden","true")}
+
+async function auth(endpoint,email,password,status,button){
+  clearStatus(status);const original=button.textContent;
+  try{
+    button.disabled=true;button.textContent=endpoint.endsWith("register")?"Creating Account...":"Signing In...";
+    const r=await fetch(endpoint,{method:"POST",headers:JSON_HEADERS,credentials:"same-origin",body:JSON.stringify({email:email,password:password})});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(data.error||"Unable to complete this request.");
+    currentUser=data;renderAccount();
+    setStatus(status,endpoint.endsWith("register")?"Account created — 2 bonus credits added.":"Signed in successfully.","success");
+    setTimeout(closeAuth,600);
+  }catch(e){setStatus(status,e instanceof Error?e.message:"Something went wrong.","error")}
+  finally{button.disabled=false;button.textContent=original}
+}
+async function signOut(){
+  try{await fetch("/api/auth/logout",{method:"POST",credentials:"same-origin"})}catch{}
+  currentUser=null;renderAccount();
+}
+
+// Checkout --------------------------------------------------------------
+async function startCheckout(endpoint,body,button){
+  if(!currentUser){openAuth("login");return}
+  const original=button.textContent;
+  try{
+    button.disabled=true;button.textContent="Opening Checkout...";
+    const r=await fetch(endpoint,{method:"POST",headers:JSON_HEADERS,credentials:"same-origin",body:JSON.stringify(body)});
+    const c=r.headers.get("content-type")||"",data=c.includes("application/json")?await r.json():{error:await r.text()};
+    if(!r.ok)throw new Error(data.error||"Unable to open checkout.");
+    if(!data.url)throw new Error("Stripe Checkout URL was not returned.");
+    window.location.href=data.url;
+  }catch(e){alert(e instanceof Error?e.message:"Unable to open checkout.");button.disabled=false;button.textContent=original}
+}
+
+authButton.addEventListener("click",()=>{currentUser?signOut():openAuth("login")});
+$("create-account-button").addEventListener("click",()=>{if(!currentUser)openAuth("register")});
+$("close-auth").addEventListener("click",closeAuth);
+modal.addEventListener("click",e=>{if(e.target===modal)closeAuth()});
+loginTab.addEventListener("click",()=>showPanel("login"));
+registerTab.addEventListener("click",()=>showPanel("register"));
+plusCheckoutButton.addEventListener("click",()=>startCheckout("/api/billing/subscribe",{},plusCheckoutButton));
+creditCheckoutButton.addEventListener("click",()=>startCheckout("/api/billing/checkout",{packId:(creditPacks[0]||{}).id||"pack_10"},creditCheckoutButton));
+loginForm.addEventListener("submit",e=>{e.preventDefault();auth("/api/auth/login",$("login-email").value.trim(),$("login-password").value,$("login-status"),loginForm.querySelector("button[type=submit]"))});
+registerForm.addEventListener("submit",e=>{e.preventDefault();const p=$("register-password").value,c=$("register-confirm").value,s=$("register-status");if(p!==c){setStatus(s,"Passwords do not match.","error");return}auth("/api/auth/register",$("register-email").value.trim(),p,s,registerForm.querySelector("button[type=submit]"))});
+
+// Results ---------------------------------------------------------------
+// Renders a DealRecommendation from the DTE-1.0 engine.
+function renderRecommendation(rec,extracted){
+  $("results-title").textContent=extracted&&extracted.title?extracted.title:"DealTough recommendation";
+  text("deal-score",rec.dealScore+"/100");
+  text("deal-score-note","Confidence: "+rec.confidencePercent+"%");
+  text("verdict",rec.verdict);
+  text("verdict-note",(rec.reasons&&rec.reasons[0])||"Review the details below.");
+  text("market-value",money(rec.fairMarketValue));
+  text("market-value-note","Great buy under "+money(rec.greatDealPrice)+" • good under "+money(rec.goodDealPrice));
+  text("true-cost",money(rec.trueCost));
+  text("opening-offer",money(rec.openingOffer));
+  text("opening-offer-note","Target "+money(rec.targetPrice)+" • saves about "+money(rec.estimatedSavings));
+  text("maximum-price",money(rec.walkAwayPrice));
+  text("risk-heading",rec.riskLevel+" risk");
+  text("risks",list(rec.topRisks));
+  text("seller-questions",list(rec.sellerQuestions));
+  text("negotiation-script",rec.negotiationMessage||"No negotiation message was returned.");
+  results.classList.add("visible");
+  results.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+// Analyze: paste listing (AI pipeline) -----------------------------------
+function switchMode(mode){
+  const paste=mode==="paste";
+  pasteTab.classList.toggle("active",paste);manualTab.classList.toggle("active",!paste);
+  pasteForm.classList.toggle("active",paste);manualForm.classList.toggle("active",!paste);
+}
+pasteTab.addEventListener("click",()=>switchMode("paste"));
+manualTab.addEventListener("click",()=>switchMode("manual"));
+
+function readPhoto(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error("Could not read "+file.name));
+    // dataURL is "data:<mime>;base64,<payload>" - the API wants the payload alone.
+    reader.onload=()=>resolve({base64:String(reader.result).split(",")[1],mediaType:file.type});
+    reader.readAsDataURL(file);
+  });
+}
+function collectPhotos(){
+  const files=Array.prototype.slice.call($("listing-photos").files||[],0,MAX_PHOTOS);
+  for(const file of files){
+    if(file.size>MAX_PHOTO_BYTES)return Promise.reject(new Error(file.name+" is over 5 MB."));
+  }
+  return files.length?Promise.all(files.map(readPhoto)):Promise.resolve(undefined);
+}
+
+pasteForm.addEventListener("submit",async e=>{
+  e.preventDefault();clearStatus(pasteStatus);
+  if(!currentUser){openAuth("login");return}
+  const rawText=$("listing-text").value.trim();
+  if(rawText.length<20){setStatus(pasteStatus,"Paste a bit more of the listing — at least a title and price.","error");return}
+  const button=pasteForm.querySelector("button[type=submit]"),original=button.textContent;
+  try{
+    button.disabled=true;button.textContent="Reading Listing...";
+    setStatus(pasteStatus,"Extracting details, pulling comparables, and scoring the deal...","info");
+    const payload={rawText:rawText};
+    const category=$("paste-category").value;
+    if(category)payload.categoryOverride=category;
+    const photos=await collectPhotos();
+    if(photos)payload.photos=photos;
+    const r=await fetch("/api/v1/deals/from-listing",{method:"POST",headers:JSON_HEADERS,credentials:"same-origin",body:JSON.stringify(payload)});
+    const c=r.headers.get("content-type")||"",data=c.includes("application/json")?await r.json():{error:await r.text()};
+    if(r.status===401){openAuth("login");throw new Error("Please sign in to analyze a listing.")}
+    if(!r.ok)throw new Error(data.error||"Unable to analyze this listing.");
+    renderRecommendation(data.recommendation,data.extracted);
+    const notes=[];
+    if(data.comparablesCount)notes.push(data.comparablesCount+" comparable listings from "+(data.comparablesSource==="ebay_active"?"eBay":data.comparablesSource));
+    if(data.warnings&&data.warnings.length)notes.push.apply(notes,data.warnings);
+    const hasWarnings=Boolean(data.warnings&&data.warnings.length);
+    setStatus(pasteStatus,notes.length?"Analysis ready — "+notes.join("; ")+".":"Your DealTough analysis is ready.",hasWarnings?"info":"success");
+    refreshAccount();
+  }catch(err){setStatus(pasteStatus,err instanceof Error?err.message:"Something went wrong. Please try again.","error")}
+  finally{button.disabled=false;button.textContent=original}
+});
+
+// Analyze: manual numbers (free, no credit) ------------------------------
+// /api/v1/deals/analyze takes a DealInput; the user's market estimate becomes
+// the single comparable the engine values against.
+manualForm.addEventListener("submit",async e=>{
+  e.preventDefault();clearStatus(manualStatus);
+  const askingPrice=Number($("asking-price").value),estimatedMarketValue=Number($("estimated-market-value").value);
+  if(!Number.isFinite(askingPrice)||askingPrice<=0){setStatus(manualStatus,"Please enter a valid asking price.","error");return}
+  if(!Number.isFinite(estimatedMarketValue)||estimatedMarketValue<=0){setStatus(manualStatus,"Please enter a valid estimated market value.","error");return}
+  const button=manualForm.querySelector("button[type=submit]"),original=button.textContent;
+  try{
+    button.disabled=true;button.textContent="Scoring...";
+    const body={
+      category:$("manual-category").value,
+      title:$("deal-title").value.trim()||"Untitled deal",
+      askingPrice:askingPrice,
+      condition:$("manual-condition").value,
+      comparables:[{price:estimatedMarketValue,similarity:.85,source:"user_estimate"}],
+      requiredFieldsPresent:.6,
+      photoQuality:0
+    };
+    const r=await fetch("/api/v1/deals/analyze",{method:"POST",headers:JSON_HEADERS,credentials:"same-origin",body:JSON.stringify(body)});
+    const c=r.headers.get("content-type")||"",data=c.includes("application/json")?await r.json():{error:await r.text()};
+    if(!r.ok)throw new Error(data.error||"Unable to score these numbers.");
+    renderRecommendation(data,{title:body.title});
+    setStatus(manualStatus,"Your DealTough analysis is ready.","success");
+  }catch(err){setStatus(manualStatus,err instanceof Error?err.message:"Something went wrong. Please try again.","error")}
+  finally{button.disabled=false;button.textContent=original}
+});
+
+copyBtn.addEventListener("click",async()=>{
+  const value=$("negotiation-script").textContent.trim();
+  try{await navigator.clipboard.writeText(value);copyBtn.textContent="Copied!";setTimeout(()=>{copyBtn.textContent="Copy Script"},1500)}
+  catch{alert("The message could not be copied.")}
+});
+
+// Stripe returns to /?checkout=success|cancel - the webhook credits the account,
+// so re-read it rather than trusting the redirect.
+const params=new URLSearchParams(window.location.search);
+if(params.get("checkout")==="success"){setTimeout(()=>{alert(params.get("plan")==="plus"?"You're on DealTough Plus. Your analyses have been topped up.":"Payment complete. Your credits have been added.")},300)}
+else if(params.get("checkout")==="cancel"){setTimeout(()=>{alert("Checkout was canceled. No payment was made.")},300)}
+if(params.has("checkout"))history.replaceState({},"",window.location.pathname);
+
+refreshAccount();
+loadBilling();
 </script>
 </body>
 </html>

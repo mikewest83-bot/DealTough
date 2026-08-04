@@ -1,19 +1,28 @@
-import { env } from "./env.js";
-import type { Comparable, DealCategory } from "./types.js";
+import { env, isEbayInsightsEnabled } from "./env.js";
+import { log } from "./log.js";
+import type { Comparable, Condition, DealCategory } from "./types.js";
 
 const TOKEN_URL = "https://api.ebay.com/identity/v1/oauth2/token";
 const SEARCH_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search";
+const INSIGHTS_URL =
+  "https://api.ebay.com/buy/marketplace_insights/v1_beta/item_sales/search";
+
+const BASE_SCOPE = "https://api.ebay.com/oauth/api_scope";
+const INSIGHTS_SCOPE = "https://api.ebay.com/oauth/api_scope/buy.marketplace.insights";
 
 interface CachedToken {
   token: string;
   expiresAt: number;
 }
 
-let cachedToken: CachedToken | null = null;
+// Keyed by scope: the Marketplace Insights token is a separate grant, and
+// asking for a scope the account is not approved for fails the whole request.
+const tokenCache = new Map<string, CachedToken>();
 
-async function getAppToken(): Promise<string> {
-  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
-    return cachedToken.token;
+async function getAppToken(scope: string = BASE_SCOPE): Promise<string> {
+  const cached = tokenCache.get(scope);
+  if (cached && cached.expiresAt > Date.now() + 60_000) {
+    return cached.token;
   }
 
   const id = env.ebayClientId();
@@ -26,10 +35,7 @@ async function getAppToken(): Promise<string> {
       Authorization: `Basic ${basicAuth}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      scope: "https://api.ebay.com/oauth/api_scope",
-    }),
+    body: new URLSearchParams({ grant_type: "client_credentials", scope }),
   });
 
   if (!res.ok) {
@@ -37,11 +43,11 @@ async function getAppToken(): Promise<string> {
   }
 
   const data = (await res.json()) as { access_token: string; expires_in: number };
-  cachedToken = {
+  tokenCache.set(scope, {
     token: data.access_token,
     expiresAt: Date.now() + data.expires_in * 1000,
-  };
-  return cachedToken.token;
+  });
+  return data.access_token;
 }
 
 export interface EbaySearchParams {
@@ -122,6 +128,46 @@ function isAccessory(candidateTitle: string, referenceTitle: string): boolean {
   );
 }
 
+// ── condition ───────────────────────────────────────────────────────────
+// eBay reports a free-text condition per item. Without it every comparable
+// is implicitly "average condition", so a beat-up listing gets measured
+// against a shelf of mint ones. Longest/most specific phrases are checked
+// first — "new other" and "for parts" both contain shorter matches.
+const CONDITION_PATTERNS: Array<[string, Condition]> = [
+  ["for parts or not working", "poor"],
+  ["for parts", "poor"],
+  ["not working", "poor"],
+  ["parts only", "poor"],
+  ["salvage", "poor"],
+  ["acceptable", "fair"],
+  ["new other", "like_new"],
+  ["new with defects", "fair"],
+  ["new without", "like_new"],
+  ["open box", "like_new"],
+  ["like new", "like_new"],
+  ["excellent", "like_new"],
+  ["very good", "good"],
+  ["refurbished", "good"],
+  ["pre-owned", "good"],
+  ["preowned", "good"],
+  ["seller refurbished", "good"],
+  ["good", "good"],
+  ["fair", "fair"],
+  ["poor", "poor"],
+  ["brand new", "new"],
+  ["new", "new"],
+  ["used", "good"],
+];
+
+export function normalizeCondition(raw: unknown): Condition | undefined {
+  if (typeof raw !== "string" || !raw.trim()) return undefined;
+  const value = raw.toLowerCase();
+  for (const [pattern, condition] of CONDITION_PATTERNS) {
+    if (value.includes(pattern)) return condition;
+  }
+  return undefined;
+}
+
 // Median absolute deviation, applied after relevance filtering so the median
 // is already anchored to real matches. 1.4826 rescales MAD to a standard
 // deviation for normally distributed data; 3.5 of those is the conventional
@@ -146,27 +192,31 @@ interface BrowseItem {
   condition?: string;
 }
 
-// Pure — no network. This is what tests exercise directly against fixture JSON.
-// `referenceTitle` is the listing being evaluated; without it there is nothing
-// to judge relevance against, so every priced item is kept at a neutral weight.
-export function mapBrowseResultsToComparables(
-  data: unknown,
-  referenceTitle?: string,
-): Comparable[] {
-  const items = (data as { itemSummaries?: unknown[] })?.itemSummaries;
-  if (!Array.isArray(items)) return [];
+interface ItemSale {
+  lastSoldPrice?: { value?: string };
+  title?: string;
+  condition?: string;
+}
 
+// Shared by the active and sold mappers: relevance gate, condition parse,
+// and the outlier pass. `referenceTitle` is the listing being evaluated;
+// without it there is nothing to judge relevance against, so every priced
+// item is kept at a neutral weight.
+function buildComparables(
+  rows: Array<{ price?: string; title?: string; condition?: string }>,
+  referenceTitle: string | undefined,
+  source: string,
+  sold: boolean,
+): Comparable[] {
   const comparables: Comparable[] = [];
-  for (const raw of items) {
-    const item = raw as BrowseItem;
-    const value = item.price?.value;
-    if (!value) continue;
-    const price = Number(value);
+  for (const row of rows) {
+    if (!row.price) continue;
+    const price = Number(row.price);
     if (!Number.isFinite(price) || price <= 0) continue;
 
     let similarity = 0.5;
     if (referenceTitle) {
-      const title = item.title ?? "";
+      const title = row.title ?? "";
       if (isAccessory(title, referenceTitle)) continue;
       similarity = titleSimilarity(referenceTitle, title);
       if (similarity < MIN_SIMILARITY) continue;
@@ -175,15 +225,124 @@ export function mapBrowseResultsToComparables(
     comparables.push({
       price,
       similarity,
-      source: "ebay_active",
-      sold: false,
+      source,
+      sold,
+      condition: normalizeCondition(row.condition),
     });
   }
 
   return rejectPriceOutliers(comparables);
 }
 
-export async function fetchComparables(params: EbaySearchParams): Promise<Comparable[]> {
+// Pure — no network. This is what tests exercise directly against fixture JSON.
+export function mapBrowseResultsToComparables(
+  data: unknown,
+  referenceTitle?: string,
+): Comparable[] {
+  const items = (data as { itemSummaries?: unknown[] })?.itemSummaries;
+  if (!Array.isArray(items)) return [];
+
+  return buildComparables(
+    items.map((raw) => {
+      const item = raw as BrowseItem;
+      return { price: item.price?.value, title: item.title, condition: item.condition };
+    }),
+    referenceTitle,
+    "ebay_active",
+    false,
+  );
+}
+
+// Marketplace Insights returns what items actually sold for, which is the
+// number that matters — asking prices are what sellers hope for, and on used
+// goods the gap runs well into double digits.
+export function mapItemSalesToComparables(
+  data: unknown,
+  referenceTitle?: string,
+): Comparable[] {
+  const items = (data as { itemSales?: unknown[] })?.itemSales;
+  if (!Array.isArray(items)) return [];
+
+  return buildComparables(
+    items.map((raw) => {
+      const item = raw as ItemSale;
+      return { price: item.lastSoldPrice?.value, title: item.title, condition: item.condition };
+    }),
+    referenceTitle,
+    "ebay_sold",
+    true,
+  );
+}
+
+// ── cache ───────────────────────────────────────────────────────────────
+// Every analysis otherwise costs an OAuth round trip plus a search, and
+// eBay's call quota is a real constraint. Secondhand prices do not move
+// hour to hour, so a few hours of staleness is invisible to the user.
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const CACHE_MAX_ENTRIES = 500;
+
+// Enough completed sales to stand on their own without active listings.
+const SOLD_ONLY_THRESHOLD = 5;
+
+interface CacheEntry {
+  comparables: Comparable[];
+  expiresAt: number;
+}
+
+const comparableCache = new Map<string, CacheEntry>();
+
+function cacheKey(params: EbaySearchParams): string {
+  return `${params.title.trim().toLowerCase()}|${params.limit ?? ""}`;
+}
+
+function readCache(key: string): Comparable[] | null {
+  const entry = comparableCache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    comparableCache.delete(key);
+    return null;
+  }
+  // Refresh insertion order so the eviction below is least-recently-used.
+  comparableCache.delete(key);
+  comparableCache.set(key, entry);
+  return entry.comparables;
+}
+
+function writeCache(key: string, comparables: Comparable[]): void {
+  if (comparableCache.size >= CACHE_MAX_ENTRIES) {
+    const oldest = comparableCache.keys().next();
+    if (!oldest.done) comparableCache.delete(oldest.value);
+  }
+  comparableCache.set(key, { comparables, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+export function clearComparableCache(): void {
+  comparableCache.clear();
+  tokenCache.clear();
+}
+
+async function fetchSoldComparables(params: EbaySearchParams): Promise<Comparable[]> {
+  const token = await getAppToken(INSIGHTS_SCOPE);
+
+  const url = new URL(INSIGHTS_URL);
+  url.searchParams.set("q", params.title);
+  url.searchParams.set("limit", String(params.limit ?? 50));
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`eBay Marketplace Insights request failed: ${res.status}`);
+  }
+
+  return mapItemSalesToComparables(await res.json(), params.title);
+}
+
+async function fetchActiveComparables(params: EbaySearchParams): Promise<Comparable[]> {
   const token = await getAppToken();
 
   const url = new URL(SEARCH_URL);
@@ -205,6 +364,44 @@ export async function fetchComparables(params: EbaySearchParams): Promise<Compar
     throw new Error(`eBay Browse API request failed: ${res.status}`);
   }
 
-  const data = await res.json();
-  return mapBrowseResultsToComparables(data, params.title);
+  return mapBrowseResultsToComparables(await res.json(), params.title);
+}
+
+export async function fetchComparables(params: EbaySearchParams): Promise<Comparable[]> {
+  const key = cacheKey(params);
+  const cached = readCache(key);
+  if (cached) {
+    log.debug("ebay.cache_hit", { title: params.title, comparables: cached.length });
+    return cached;
+  }
+
+  // Sold data needs the Marketplace Insights scope, which eBay grants on
+  // request rather than by default — so it is opt-in, and a failure here is
+  // never fatal. Active listings still answer the question, just less well.
+  let sold: Comparable[] = [];
+  if (isEbayInsightsEnabled()) {
+    try {
+      sold = await fetchSoldComparables(params);
+    } catch (error) {
+      log.warn("ebay.sold_lookup_failed", {
+        title: params.title,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  // Once there are enough completed sales to form a distribution, asking
+  // prices only add noise — a seller can ask anything. Below that threshold
+  // both are kept, and the engine's sold-item weighting sorts out the mix.
+  const active = sold.length >= SOLD_ONLY_THRESHOLD ? [] : await fetchActiveComparables(params);
+  const comparables = [...sold, ...active];
+
+  log.info("ebay.comparables", {
+    title: params.title,
+    sold: sold.length,
+    active: active.length,
+  });
+
+  writeCache(key, comparables);
+  return comparables;
 }

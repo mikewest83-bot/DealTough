@@ -2,6 +2,7 @@ import { CATEGORY_CONFIG } from "./config.js";
 import { clamp, roundMoney, severityPenalty, weightedMedian } from "./math.js";
 import type {
   Comparable,
+  Condition,
   DealInput,
   DealRecommendation,
   RiskSeverity,
@@ -18,13 +19,72 @@ function validateInput(input: DealInput): void {
   }
 }
 
-function comparableWeight(comp: Comparable): number {
+// Ordinal scale for condition, so "how far apart are these two items" is a
+// number. Unknown has no rank — it means no information, not middling.
+const CONDITION_RANK: Record<string, number> = {
+  new: 5, like_new: 4, good: 3, fair: 2, poor: 1,
+};
+
+function conditionRank(condition?: Condition): number | null {
+  if (!condition || condition === "unknown") return null;
+  return CONDITION_RANK[condition] ?? null;
+}
+
+// A mint comparable says little about a beaten-up listing and vice versa.
+// Neutral when either side is unlabeled — an unknown condition is missing
+// data, and guessing at it would be worse than not weighting on it.
+function conditionAffinity(comp: Comparable, listingCondition?: Condition): number {
+  const compRank = conditionRank(comp.condition);
+  const listingRank = conditionRank(listingCondition);
+  if (compRank == null || listingRank == null) return 1;
+  return clamp(1 - Math.abs(compRank - listingRank) * 0.18, 0.4, 1);
+}
+
+function comparableWeight(comp: Comparable, listingCondition?: Condition): number {
   const similarity = clamp(comp.similarity ?? 0.65, 0.1, 1);
   const soldBoost = comp.sold ? 1.2 : 1;
   const distancePenalty = comp.distanceMiles == null
     ? 1
     : clamp(1 - comp.distanceMiles / 1000, 0.6, 1);
-  return similarity * soldBoost * distancePenalty;
+  return similarity * soldBoost * distancePenalty * conditionAffinity(comp, listingCondition);
+}
+
+// How much of the blanket category condition discount is still warranted.
+//
+// That discount exists because the comparable set is assumed to be in
+// generic (roughly average) condition while the listing may not be. Once
+// comparables carry their own condition labels that assumption is testable,
+// and applying the discount anyway would charge the listing twice for the
+// same wear. Returns 1 when nothing is labeled — the original behaviour.
+function residualConditionGap(
+  comparables: Comparable[],
+  listingCondition: Condition | undefined,
+  weightOf: (comp: Comparable) => number,
+): number {
+  const listingRank = conditionRank(listingCondition);
+  if (listingRank == null) return 1;
+
+  let labeledWeight = 0;
+  let totalWeight = 0;
+  let rankWeightSum = 0;
+  for (const comp of comparables) {
+    const weight = weightOf(comp);
+    totalWeight += weight;
+    const rank = conditionRank(comp.condition);
+    if (rank != null) {
+      labeledWeight += weight;
+      rankWeightSum += rank * weight;
+    }
+  }
+
+  if (!totalWeight || !labeledWeight) return 1;
+
+  const coverage = labeledWeight / totalWeight;
+  const meanComparableRank = rankWeightSum / labeledWeight;
+  // Two ranks of separation is about where the category discounts are
+  // calibrated, so that is treated as the full effect.
+  const gap = clamp((meanComparableRank - listingRank) / 2, 0, 1);
+  return coverage * gap + (1 - coverage);
 }
 
 function estimateMarketValue(input: DealInput): {
@@ -47,16 +107,23 @@ function estimateMarketValue(input: DealInput): {
     };
   }
 
+  const condition = input.condition ?? "unknown";
+  const weightOf = (c: Comparable): number => comparableWeight(c, input.condition);
+
   const base = weightedMedian(
-    valid.map((c) => ({ value: c.price, weight: comparableWeight(c) }))
+    valid.map((c) => ({ value: c.price, weight: weightOf(c) }))
   );
 
-  const condition = input.condition ?? "unknown";
   const conditionDiscount = config.conditionDiscounts[condition] ?? config.conditionDiscounts.unknown;
-  const adjusted = base * (1 - conditionDiscount);
+  const residual = residualConditionGap(valid, input.condition, weightOf);
+  const adjusted = base * (1 - conditionDiscount * residual);
 
   if (condition === "unknown") {
     assumptions.push("Condition was unknown, so a protective category discount was applied.");
+  } else if (residual < 0.95) {
+    assumptions.push(
+      "Comparables carried their own condition labels, so the category condition discount was reduced to avoid counting the same wear twice.",
+    );
   }
 
   return {

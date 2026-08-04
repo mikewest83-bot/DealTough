@@ -23,3 +23,10 @@ export const isDbConfigured = (): boolean => Boolean(process.env.DATABASE_URL);
 export const isStripeConfigured = (): boolean =>
   Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET);
 export const isAuthConfigured = (): boolean => Boolean(process.env.JWT_SECRET);
+
+// Sold-price data comes from eBay's Marketplace Insights API, whose OAuth
+// scope has to be granted per application. Requesting it without approval
+// fails the token call outright, so it stays opt-in rather than inferred
+// from the eBay credentials being present.
+export const isEbayInsightsEnabled = (): boolean =>
+  isEbayConfigured() && process.env.EBAY_MARKETPLACE_INSIGHTS === "1";

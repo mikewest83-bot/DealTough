@@ -63,3 +63,102 @@ describe("DealTough Intelligence Engine", () => {
     expect(result.assumptions.length).toBeGreaterThan(0);
   });
 });
+
+describe("condition-aware comparables", () => {
+  const base = {
+    category: "electronics" as const,
+    title: "Sony WH-1000XM5",
+    askingPrice: 200,
+    condition: "fair" as const,
+    hiddenCosts: [],
+    riskSignals: [],
+  };
+
+  it("leans on the comparables that match the listing's condition", () => {
+    // Same prices, opposite labels. Whichever set matches "fair" should
+    // pull the market value toward it.
+    const cheapIsFair = analyzeDeal({
+      ...base,
+      comparables: [
+        { price: 100, similarity: 1, condition: "fair" },
+        { price: 400, similarity: 1, condition: "new" },
+      ],
+    });
+
+    const cheapIsNew = analyzeDeal({
+      ...base,
+      comparables: [
+        { price: 100, similarity: 1, condition: "new" },
+        { price: 400, similarity: 1, condition: "fair" },
+      ],
+    });
+
+    expect(cheapIsFair.fairMarketValue).toBeLessThan(cheapIsNew.fairMarketValue);
+  });
+
+  it("does not discount twice when comparables are already the listing's condition", () => {
+    // The category condition discount exists to bridge a listing in poor
+    // shape to a market of average ones. When every comparable is already
+    // labeled the same as the listing, that bridge has been crossed.
+    const labeled = analyzeDeal({
+      ...base,
+      comparables: [
+        { price: 300, similarity: 1, condition: "fair" },
+        { price: 300, similarity: 1, condition: "fair" },
+      ],
+    });
+
+    const unlabeled = analyzeDeal({
+      ...base,
+      comparables: [
+        { price: 300, similarity: 1 },
+        { price: 300, similarity: 1 },
+      ],
+    });
+
+    expect(labeled.fairMarketValue).toBeGreaterThan(unlabeled.fairMarketValue);
+    expect(labeled.assumptions.join(" ")).toContain("counting the same wear twice");
+  });
+
+  it("keeps the full discount when the comparables are in better shape", () => {
+    const betterComparables = analyzeDeal({
+      ...base,
+      comparables: [
+        { price: 300, similarity: 1, condition: "new" },
+        { price: 300, similarity: 1, condition: "new" },
+      ],
+    });
+
+    const unlabeled = analyzeDeal({
+      ...base,
+      comparables: [
+        { price: 300, similarity: 1 },
+        { price: 300, similarity: 1 },
+      ],
+    });
+
+    expect(betterComparables.fairMarketValue).toBe(unlabeled.fairMarketValue);
+  });
+
+  it("ignores condition entirely when the listing's own condition is unknown", () => {
+    const withLabels = analyzeDeal({
+      ...base,
+      condition: "unknown",
+      comparables: [
+        { price: 300, similarity: 1, condition: "new" },
+        { price: 320, similarity: 1, condition: "poor" },
+      ],
+    });
+
+    const withoutLabels = analyzeDeal({
+      ...base,
+      condition: "unknown",
+      comparables: [
+        { price: 300, similarity: 1 },
+        { price: 320, similarity: 1 },
+      ],
+    });
+
+    expect(withLabels.fairMarketValue).toBe(withoutLabels.fairMarketValue);
+  });
+});

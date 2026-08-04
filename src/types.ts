@@ -21,6 +21,7 @@ export interface Comparable {
   source?: string;
   sold?: boolean;
   distanceMiles?: number;
+  condition?: Condition;
 }
 
 export interface CostItem {

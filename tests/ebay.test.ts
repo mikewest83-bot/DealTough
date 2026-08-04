@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { mapBrowseResultsToComparables, titleSimilarity } from "../src/ebay.js";
+import {
+  mapBrowseResultsToComparables,
+  mapItemSalesToComparables,
+  normalizeCondition,
+  titleSimilarity,
+} from "../src/ebay.js";
 
 describe("mapBrowseResultsToComparables", () => {
   it("maps normal Browse API results to honestly-labeled comparables", () => {
@@ -112,6 +117,83 @@ describe("mapBrowseResultsToComparables with a reference title", () => {
     );
 
     expect(result).toHaveLength(2);
+  });
+});
+
+describe("condition parsing", () => {
+  it("maps eBay's condition wording onto the engine's scale", () => {
+    expect(normalizeCondition("Brand New")).toBe("new");
+    expect(normalizeCondition("Open box")).toBe("like_new");
+    expect(normalizeCondition("Certified - Refurbished")).toBe("good");
+    expect(normalizeCondition("Pre-owned")).toBe("good");
+    expect(normalizeCondition("Used")).toBe("good");
+    expect(normalizeCondition("Acceptable")).toBe("fair");
+    expect(normalizeCondition("For parts or not working")).toBe("poor");
+  });
+
+  it("prefers the more specific phrase when both could match", () => {
+    // "New other" contains "new", but it is not new.
+    expect(normalizeCondition("New other (see details)")).toBe("like_new");
+    // "For parts or not working" contains neither "new" nor "used".
+    expect(normalizeCondition("For parts or not working")).not.toBe("new");
+  });
+
+  it("returns undefined rather than guessing at an unlabeled item", () => {
+    expect(normalizeCondition(undefined)).toBeUndefined();
+    expect(normalizeCondition("")).toBeUndefined();
+    expect(normalizeCondition("Wibble")).toBeUndefined();
+  });
+
+  it("carries the condition through onto the comparable", () => {
+    const result = mapBrowseResultsToComparables(
+      {
+        itemSummaries: [
+          { title: "Sony WH-1000XM5", price: { value: "250" }, condition: "Open box" },
+          { title: "Sony WH-1000XM5", price: { value: "180" } },
+        ],
+      },
+      "Sony WH-1000XM5",
+    );
+
+    expect(result[0].condition).toBe("like_new");
+    expect(result[1].condition).toBeUndefined();
+  });
+});
+
+describe("mapItemSalesToComparables", () => {
+  it("reads sold prices from lastSoldPrice and marks them sold", () => {
+    const result = mapItemSalesToComparables(
+      {
+        itemSales: [
+          { title: "Sony WH-1000XM5 Headphones", lastSoldPrice: { value: "240" }, condition: "Used" },
+          { title: "Sony WH-1000XM5 Black", lastSoldPrice: { value: "255" } },
+        ],
+      },
+      "Sony WH-1000XM5",
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({ price: 240, sold: true, source: "ebay_sold", condition: "good" });
+  });
+
+  it("applies the same relevance filtering as the active-listing path", () => {
+    const result = mapItemSalesToComparables(
+      {
+        itemSales: [
+          { title: "2019 Ford F-150 XLT", lastSoldPrice: { value: "28000" } },
+          { title: "Ford F-150 Floor Mat Set", lastSoldPrice: { value: "45" } },
+        ],
+      },
+      "2019 Ford F-150 XLT",
+    );
+
+    expect(result.map((c) => c.price)).toEqual([28000]);
+  });
+
+  it("returns an empty array when there are no sales", () => {
+    expect(mapItemSalesToComparables({ itemSales: [] })).toEqual([]);
+    expect(mapItemSalesToComparables({})).toEqual([]);
+    expect(mapItemSalesToComparables(null)).toEqual([]);
   });
 });
 

@@ -22,6 +22,10 @@ model Deal {
   source         String  @default("manual")
   rawListingText String?
 
+  // Set only when the owner explicitly shares the report. Null means the
+  // deal is reachable through the authenticated routes and nowhere else.
+  shareId String? @unique
+
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -127,7 +127,7 @@ export async function extractListingFields(input: ExtractInput): Promise<Extract
   ];
 
   const response = await getClient().messages.create({
-    model: "claude-sonnet-5",
+    model: "claude-opus-5",
     max_tokens: 4096,
     output_config: { format: { type: "json_schema", schema: EXTRACTION_SCHEMA } },
     messages: [{ role: "user", content }],

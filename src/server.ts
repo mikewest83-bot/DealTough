@@ -3,6 +3,19 @@
 import { app } from "./app.js";
 import { log } from "./log.js";
 
+// Sessions are signed by jose, which uses WebCrypto — a global only from Node
+// 19 on. On an older runtime nothing fails at boot; instead every sign-in
+// throws "crypto is not defined" deep inside the handler and the caller hangs.
+// Far better to refuse to start and say why.
+if (typeof globalThis.crypto?.subtle === "undefined") {
+  log.error("process.unsupported_runtime", {
+    nodeVersion: process.version,
+    required: ">=20",
+    reason: "globalThis.crypto.subtle is missing, so session signing cannot work",
+  });
+  process.exit(1);
+}
+
 const port = Number(process.env.PORT) || 4000;
 
 app.listen(port, "0.0.0.0", () => {

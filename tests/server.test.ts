@@ -17,6 +17,10 @@ const prisma = vi.hoisted(() => ({
     findMany: vi.fn(),
     update: vi.fn(),
   },
+  user: {
+    findUnique: vi.fn(),
+    create: vi.fn(),
+  },
 }));
 
 vi.mock("../src/db.js", () => ({ getPrisma: () => prisma }));
@@ -68,6 +72,41 @@ describe("health", () => {
     const res = await get("/health");
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ ok: true, engineVersion: "DTE-1.0" });
+  });
+});
+
+// Express 4 does not catch a throw from an async handler. Without a try/catch
+// the rejection escapes, nothing ever writes to the response, and the browser
+// spins until it times out -- which is how a "crypto is not defined" error on
+// an old Node runtime showed up in production as a sign-in that hung for
+// minutes instead of an error anyone could see. These assert that an internal
+// failure ends the request.
+describe("auth failures answer instead of hanging", () => {
+  it("answers 500 when sign-in hits an internal error", async () => {
+    prisma.user.findUnique.mockRejectedValueOnce(new Error("crypto is not defined"));
+    const res = await post("/api/auth/login", { email: "a@b.com", password: "password123" });
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toHaveProperty("error");
+  });
+
+  it("answers 500 when registration hits an internal error", async () => {
+    prisma.user.findUnique.mockRejectedValueOnce(new Error("connection lost"));
+    const res = await post("/api/auth/register", { email: "a@b.com", password: "password123" });
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toHaveProperty("error");
+  });
+
+  it("answers 500 when the account lookup hits an internal error", async () => {
+    prisma.user.findUnique.mockRejectedValueOnce(new Error("connection lost"));
+    const res = await get("/api/auth/me", sessionCookie);
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toHaveProperty("error");
+  });
+
+  it("still rejects bad credentials with 401, not 500", async () => {
+    prisma.user.findUnique.mockResolvedValueOnce(null);
+    const res = await post("/api/auth/login", { email: "a@b.com", password: "password123" });
+    expect(res.status).toBe(401);
   });
 });
 

@@ -202,32 +202,37 @@ app.post("/api/auth/register", async (req, res) => {
     return;
   }
 
-  const prisma = getPrisma();
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    res.status(409).json({ error: "An account with that email already exists" });
-    return;
-  }
+  try {
+    const prisma = getPrisma();
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      res.status(409).json({ error: "An account with that email already exists" });
+      return;
+    }
 
-  const passwordHash = await hashPassword(password);
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
-      creditBalance: SIGNUP_BONUS_CREDITS,
-      monthlyAllowance: FREE_MONTHLY_ALLOWANCE,
-      // Required by the schema — no default, so it must be set at creation.
-      monthlyResetAt: new Date(Date.now() + MONTH_MS),
-      transactions: {
-        create: { delta: SIGNUP_BONUS_CREDITS, reason: "signup_bonus" },
+    const passwordHash = await hashPassword(password);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        creditBalance: SIGNUP_BONUS_CREDITS,
+        monthlyAllowance: FREE_MONTHLY_ALLOWANCE,
+        // Required by the schema — no default, so it must be set at creation.
+        monthlyResetAt: new Date(Date.now() + MONTH_MS),
+        transactions: {
+          create: { delta: SIGNUP_BONUS_CREDITS, reason: "signup_bonus" },
+        },
       },
-    },
-  });
+    });
 
-  const token = await signSession(user.id);
-  setSessionCookie(res, token);
-  log.info("auth.registered", { userId: user.id });
-  res.status(201).json(accountSummary(user));
+    const token = await signSession(user.id);
+    setSessionCookie(res, token);
+    log.info("auth.registered", { userId: user.id });
+    res.status(201).json(accountSummary(user));
+  } catch (error) {
+    log.error("auth.register_failed", { error });
+    res.status(500).json({ error: "Could not create the account" });
+  }
 });
 
 app.post("/api/auth/login", async (req, res) => {
@@ -238,16 +243,21 @@ app.post("/api/auth/login", async (req, res) => {
   const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
   const password = typeof req.body?.password === "string" ? req.body.password : "";
 
-  const user = await getPrisma().user.findUnique({ where: { email } });
-  const valid = user ? await verifyPassword(password, user.passwordHash) : false;
-  if (!user || !valid) {
-    res.status(401).json({ error: "Invalid email or password" });
-    return;
-  }
+  try {
+    const user = await getPrisma().user.findUnique({ where: { email } });
+    const valid = user ? await verifyPassword(password, user.passwordHash) : false;
+    if (!user || !valid) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
 
-  const token = await signSession(user.id);
-  setSessionCookie(res, token);
-  res.status(200).json(accountSummary(user));
+    const token = await signSession(user.id);
+    setSessionCookie(res, token);
+    res.status(200).json(accountSummary(user));
+  } catch (error) {
+    log.error("auth.login_failed", { error });
+    res.status(500).json({ error: "Could not sign in" });
+  }
 });
 
 app.post("/api/auth/logout", (_req, res) => {
@@ -260,13 +270,18 @@ app.get("/api/auth/me", async (req, res) => {
     res.status(503).json({ error: "Accounts are not configured" });
     return;
   }
-  const userId = await getSessionUserId(req);
-  const user = userId ? await getPrisma().user.findUnique({ where: { id: userId } }) : null;
-  if (!user) {
-    res.status(401).json({ error: "Sign in required" });
-    return;
+  try {
+    const userId = await getSessionUserId(req);
+    const user = userId ? await getPrisma().user.findUnique({ where: { id: userId } }) : null;
+    if (!user) {
+      res.status(401).json({ error: "Sign in required" });
+      return;
+    }
+    res.status(200).json(accountSummary(user));
+  } catch (error) {
+    log.error("auth.me_failed", { error });
+    res.status(500).json({ error: "Could not load the account" });
   }
-  res.status(200).json(accountSummary(user));
 });
 
 // ── billing ─────────────────────────────────────────────────────────────

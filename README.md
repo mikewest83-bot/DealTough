@@ -30,8 +30,22 @@ comparables matching the listing's condition count for more. Because the engine 
 applies a category condition discount, that discount is scaled back when the comparables
 are themselves labeled — otherwise the same wear would be charged twice.
 
-Results are cached in-process for 6 hours, so repeat analyses of the same item do not
-re-hit eBay.
+Two filters exist specifically because parts outnumber the things they belong to:
+
+- **Category constraint.** Vehicle, tools, furniture and outdoor searches are pinned to an
+  eBay category id. Unconstrained, a search for a truck returns seat covers and grilles.
+  Electronics is deliberately unconstrained — Browse allows one category per request, and
+  no single id covers both headphones and laptops.
+- **Price floor.** Anything below 35% of the asking price is treated as a part rather than
+  the item. This runs *before* outlier rejection: parts are numerous enough to own the
+  median, and once they do, the real items get discarded as the anomalies. If the floor
+  would remove everything, the comparables are kept — an asking price that far off is more
+  likely the error.
+
+Both are tuned against live results, not assumed; see the comments in `src/ebay.ts`.
+
+Results are cached in-process for 6 hours, keyed on title, category and asking price —
+all three change the answer. Repeat analyses of the same item do not re-hit eBay.
 
 Every capability degrades independently when its credential is missing — the server
 always boots, and unaffected routes keep working.

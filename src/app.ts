@@ -406,7 +406,13 @@ app.post("/api/v1/deals/from-listing", requireAuth, rateLimit("analyze", 6, 60_0
   let comparablesSource = "none";
   if (isEbayConfigured()) {
     try {
-      comparables = await fetchComparables({ title: extracted.title, category });
+      comparables = await fetchComparables({
+        title: extracted.title,
+        category,
+        // Lets the lookup discard parts and accessories, which are priced far
+        // below the item they belong to and otherwise dominate the median.
+        askingPrice: extracted.askingPrice,
+      });
       if (comparables.length) {
         comparablesSource = comparables.some((c) => c.sold) ? "ebay_sold" : "ebay_active";
       } else {

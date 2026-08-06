@@ -1,10 +1,18 @@
-import { describe, expect, it } from "vitest";
-import {
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// The lookup reads these at call time; without them fetchComparables throws
+// before it ever builds a URL.
+process.env.EBAY_CLIENT_ID = "test-client-id";
+process.env.EBAY_CLIENT_SECRET = "test-client-secret";
+
+const {
+  clearComparableCache,
+  fetchComparables,
   mapBrowseResultsToComparables,
   mapItemSalesToComparables,
   normalizeCondition,
   titleSimilarity,
-} from "../src/ebay.js";
+} = await import("../src/ebay.js");
 
 describe("mapBrowseResultsToComparables", () => {
   it("maps normal Browse API results to honestly-labeled comparables", () => {
@@ -117,6 +125,139 @@ describe("mapBrowseResultsToComparables with a reference title", () => {
     );
 
     expect(result).toHaveLength(2);
+  });
+});
+
+// Taken from a live production search. Every one of these passed the
+// relevance and accessory filters -- the parts are for the right truck and
+// none of them use a word on the accessory list -- so the word list alone
+// cannot separate them from the two real vehicles.
+const realF150Search = {
+  itemSummaries: [
+    { title: "2015-2019 Ford F-150 XLT Super Crew Leather SEMA Black Gray F150 NEW", price: { value: "755.00" } },
+    { title: "2019 Ford F-150 XLT Super Crew Leather SEMA Black Gray F150 NEW", price: { value: "755.00" } },
+    { title: "2015 2016 17 18 2019 2020 Ford F-150 XLT SuperCrew Leather SEMA Limited", price: { value: "799.00" } },
+    { title: "For Ford F150 F-150 XLT SuperCrew 4x4 Front Radiator Grille Magma Red", price: { value: "210.99" } },
+    { title: "For 2018-2020 Ford F-150 F150 XL XLT SuperCrew Front Upper Grille Blue", price: { value: "149.99" } },
+    { title: "2019 Ford F-150 SUPERCREW", price: { value: "23995.00" } },
+    { title: "2019 Ford F-150 XLT Super Crew Katzkin Leather SEMA Black Gray F150 NEW", price: { value: "1595.00" } },
+    { title: "2015-2026 Ford F150 XLT SuperCrew Front Left Door Window Glass ML34-1521", price: { value: "222.33" } },
+    { title: "2019 Ford F150 SuperCrew Cab XLT Pickup 4D 5 1/2 ft", price: { value: "29985.00" } },
+    { title: "2019 Ford F150 XLT Super Crew OEM Gray Cloth Rear Seat", price: { value: "534.05" } },
+  ],
+};
+
+const F150_TITLE = "2019 Ford F-150 XLT SuperCrew";
+
+describe("parts priced far below the asking price", () => {
+  it("discards the parts and keeps the actual vehicles", () => {
+    const result = mapBrowseResultsToComparables(realF150Search, F150_TITLE, 28000);
+
+    expect(result.map((c) => c.price).sort((a, b) => a - b)).toEqual([23995, 29985]);
+  });
+
+  // The regression this was written for. With the parts left in, they
+  // outnumber the vehicles 8 to 2 and pull the median down to $755 -- at which
+  // point the outlier pass throws out the only two real trucks as anomalies,
+  // and the engine values a $28,000 pickup at a few hundred dollars.
+  it("without an asking price, the outlier pass discards the vehicles instead", () => {
+    const result = mapBrowseResultsToComparables(realF150Search, F150_TITLE);
+
+    expect(result.map((c) => c.price)).not.toContain(23995);
+    expect(result.map((c) => c.price)).not.toContain(29985);
+  });
+
+  it("keeps every comparable when the floor would leave nothing", () => {
+    // A listing priced at ten times the market: the asking price is the
+    // outlier here, not the comparables, so they must survive to say so.
+    const result = mapBrowseResultsToComparables(
+      {
+        itemSummaries: [
+          { title: "Sony WH-1000XM5 Wireless", price: { value: "180" } },
+          { title: "Sony WH-1000XM5 Wireless Black", price: { value: "195" } },
+        ],
+      },
+      "Sony WH-1000XM5 Wireless",
+      9000,
+    );
+
+    expect(result.map((c) => c.price).sort((a, b) => a - b)).toEqual([180, 195]);
+  });
+
+  it("ignores a missing or nonsensical asking price", () => {
+    for (const asking of [undefined, 0, -50, Number.NaN]) {
+      const result = mapBrowseResultsToComparables(realF150Search, F150_TITLE, asking);
+      expect(result.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("applies the same floor to sold comparables", () => {
+    const result = mapItemSalesToComparables(
+      {
+        itemSales: [
+          { title: "2019 Ford F-150 XLT SuperCrew", lastSoldPrice: { value: "26500" } },
+          { title: "2019 Ford F-150 XLT SuperCrew Grille", lastSoldPrice: { value: "180" } },
+        ],
+      },
+      F150_TITLE,
+      28000,
+    );
+
+    expect(result.map((c) => c.price)).toEqual([26500]);
+  });
+});
+
+describe("category-constrained search", () => {
+  let requestedUrls: string[];
+
+  beforeEach(() => {
+    clearComparableCache();
+    requestedUrls = [];
+    vi.stubGlobal("fetch", async (input: string | URL) => {
+      const url = String(input);
+      requestedUrls.push(url);
+      if (url.includes("/identity/v1/oauth2/token")) {
+        return new Response(JSON.stringify({ access_token: "t", expires_in: 7200 }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ itemSummaries: [] }), { status: 200 });
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    clearComparableCache();
+  });
+
+  function searchUrl(): string {
+    return requestedUrls.find((u) => u.includes("item_summary/search")) ?? "";
+  }
+
+  it("constrains a vehicle search to Cars & Trucks", async () => {
+    await fetchComparables({ title: F150_TITLE, category: "vehicle" });
+
+    expect(searchUrl()).toContain("category_ids=6001");
+  });
+
+  it("constrains a tools search to Tools & Workshop Equipment", async () => {
+    await fetchComparables({ title: "DeWalt DCD791 drill", category: "tools" });
+
+    expect(searchUrl()).toContain("category_ids=631");
+  });
+
+  // One id per request is all Browse allows, and no single id covers both
+  // headphones and laptops -- so electronics searches all of eBay on purpose.
+  it("leaves electronics unconstrained", async () => {
+    await fetchComparables({ title: "Sony WH-1000XM5", category: "electronics" });
+
+    expect(searchUrl()).not.toContain("category_ids");
+  });
+
+  it("does not serve one category's answer to another", async () => {
+    await fetchComparables({ title: "Ranger", category: "vehicle" });
+    requestedUrls = [];
+    await fetchComparables({ title: "Ranger", category: "tools" });
+
+    expect(searchUrl()).toContain("category_ids=631");
   });
 });
 

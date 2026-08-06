@@ -53,7 +53,60 @@ async function getAppToken(scope: string = BASE_SCOPE): Promise<string> {
 export interface EbaySearchParams {
   title: string;
   category?: DealCategory;
+  askingPrice?: number;
   limit?: number;
+}
+
+// A bare keyword search hits all of eBay, and for anything with an aftermarket
+// that means parts. Searching "2019 Ford F-150 XLT SuperCrew" unconstrained
+// returns seat covers, grilles and window glass; the two actual trucks in the
+// results were then discarded as outliers, because the parts set the median.
+// Constraining to eBay Motors > Cars & Trucks returns trucks and nothing else.
+//
+// Ids were checked against live searches rather than taken from the taxonomy
+// suggester, which files a pickup under Collectibles > Advertising. Browse
+// rejects more than one id per request (error 12030), so this is one each.
+//
+// Electronics is deliberately absent. Headphones live under Consumer
+// Electronics (293) and laptops under Computers/Tablets (58058); with only one
+// id allowed, either choice erases the other product type. Unconstrained
+// electronics already tracks the constrained result closely — a WH-1000XM5
+// medians $141 either way — so there is nothing to buy here and real coverage
+// to lose.
+const CATEGORY_IDS: Partial<Record<DealCategory, string>> = {
+  vehicle: "6001", // Cars & Trucks
+  tools: "631", // Home & Garden > Tools & Workshop Equipment
+  furniture: "3197", // Home & Garden > Furniture
+  outdoor_equipment: "159912", // Home & Garden > Yard, Garden & Outdoor Living
+};
+
+// Parts are cheap relative to the thing they bolt onto, and they survive both
+// the category filter and the accessory word list — a $65 caster sits in the
+// same eBay category as the $600 chair it belongs to. Anything under this
+// fraction of the asking price is treated as not-the-item.
+//
+// Chosen by sweeping ratios over live results in all five categories. The
+// deciding case was an Aeron chair: below 0.25 the comparables are armrest
+// pads and gas cylinders and the median sits at $150, above it the median
+// snaps to $598 and the actual chairs. 0.35 clears that cliff with margin.
+//
+// Higher would score better on some samples, but the floor is defined against
+// the asking price, so raising it increasingly assumes the seller is right --
+// discarding cheap-but-real comparables is exactly how an overpriced listing
+// gets rated a fair one. At 0.35, a $28,000 truck still keeps $9,800
+// comparables, which is the case where a user most needs to be told to walk.
+const PRICE_FLOOR_RATIO = 0.35;
+
+// Applied before outlier rejection, so the median is computed over real items
+// rather than over the parts. If the floor removes everything, the asking
+// price is the more likely error — an unpriced typo or a wrong unit — so the
+// comparables are kept and the engine's own confidence scoring handles it.
+function rejectPartsPricedBelow(comparables: Comparable[], askingPrice?: number): Comparable[] {
+  if (!askingPrice || !Number.isFinite(askingPrice) || askingPrice <= 0) return comparables;
+
+  const floor = askingPrice * PRICE_FLOOR_RATIO;
+  const kept = comparables.filter((c) => c.price >= floor);
+  return kept.length ? kept : comparables;
 }
 
 // ── relevance ───────────────────────────────────────────────────────────
@@ -207,6 +260,7 @@ function buildComparables(
   referenceTitle: string | undefined,
   source: string,
   sold: boolean,
+  askingPrice?: number,
 ): Comparable[] {
   const comparables: Comparable[] = [];
   for (const row of rows) {
@@ -231,13 +285,14 @@ function buildComparables(
     });
   }
 
-  return rejectPriceOutliers(comparables);
+  return rejectPriceOutliers(rejectPartsPricedBelow(comparables, askingPrice));
 }
 
 // Pure — no network. This is what tests exercise directly against fixture JSON.
 export function mapBrowseResultsToComparables(
   data: unknown,
   referenceTitle?: string,
+  askingPrice?: number,
 ): Comparable[] {
   const items = (data as { itemSummaries?: unknown[] })?.itemSummaries;
   if (!Array.isArray(items)) return [];
@@ -250,6 +305,7 @@ export function mapBrowseResultsToComparables(
     referenceTitle,
     "ebay_active",
     false,
+    askingPrice,
   );
 }
 
@@ -259,6 +315,7 @@ export function mapBrowseResultsToComparables(
 export function mapItemSalesToComparables(
   data: unknown,
   referenceTitle?: string,
+  askingPrice?: number,
 ): Comparable[] {
   const items = (data as { itemSales?: unknown[] })?.itemSales;
   if (!Array.isArray(items)) return [];
@@ -271,6 +328,7 @@ export function mapItemSalesToComparables(
     referenceTitle,
     "ebay_sold",
     true,
+    askingPrice,
   );
 }
 
@@ -291,8 +349,17 @@ interface CacheEntry {
 
 const comparableCache = new Map<string, CacheEntry>();
 
+// Category and asking price both change which comparables come back — the
+// first picks the eBay category searched, the second sets the parts floor —
+// so both belong in the key. Leaving them out meant a truck and a toy truck
+// sharing a title could share an answer.
 function cacheKey(params: EbaySearchParams): string {
-  return `${params.title.trim().toLowerCase()}|${params.limit ?? ""}`;
+  return [
+    params.title.trim().toLowerCase(),
+    params.category ?? "",
+    params.askingPrice ?? "",
+    params.limit ?? "",
+  ].join("|");
 }
 
 function readCache(key: string): Comparable[] | null {
@@ -327,6 +394,8 @@ async function fetchSoldComparables(params: EbaySearchParams): Promise<Comparabl
   const url = new URL(INSIGHTS_URL);
   url.searchParams.set("q", params.title);
   url.searchParams.set("limit", String(params.limit ?? 50));
+  const soldCategory = params.category && CATEGORY_IDS[params.category];
+  if (soldCategory) url.searchParams.set("category_ids", soldCategory);
 
   const res = await fetch(url, {
     headers: {
@@ -339,7 +408,7 @@ async function fetchSoldComparables(params: EbaySearchParams): Promise<Comparabl
     throw new Error(`eBay Marketplace Insights request failed: ${res.status}`);
   }
 
-  return mapItemSalesToComparables(await res.json(), params.title);
+  return mapItemSalesToComparables(await res.json(), params.title, params.askingPrice);
 }
 
 async function fetchActiveComparables(params: EbaySearchParams): Promise<Comparable[]> {
@@ -352,6 +421,8 @@ async function fetchActiveComparables(params: EbaySearchParams): Promise<Compara
   url.searchParams.set("q", params.title);
   // Over-fetch, because relevance and outlier filtering discard most of it.
   url.searchParams.set("limit", String(params.limit ?? 50));
+  const activeCategory = params.category && CATEGORY_IDS[params.category];
+  if (activeCategory) url.searchParams.set("category_ids", activeCategory);
 
   const res = await fetch(url, {
     headers: {
@@ -364,7 +435,7 @@ async function fetchActiveComparables(params: EbaySearchParams): Promise<Compara
     throw new Error(`eBay Browse API request failed: ${res.status}`);
   }
 
-  return mapBrowseResultsToComparables(await res.json(), params.title);
+  return mapBrowseResultsToComparables(await res.json(), params.title, params.askingPrice);
 }
 
 export async function fetchComparables(params: EbaySearchParams): Promise<Comparable[]> {
@@ -398,6 +469,8 @@ export async function fetchComparables(params: EbaySearchParams): Promise<Compar
 
   log.info("ebay.comparables", {
     title: params.title,
+    category: params.category,
+    categoryId: (params.category && CATEGORY_IDS[params.category]) ?? "unconstrained",
     sold: sold.length,
     active: active.length,
   });

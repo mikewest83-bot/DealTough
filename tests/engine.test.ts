@@ -135,6 +135,44 @@ describe("comparables that are all far below the asking price", () => {
   });
 });
 
+// Filtering hard enough to be right about which listings count means
+// sometimes only one survives.
+describe("a market value drawn from one listing says so", () => {
+  const tv = {
+    category: "electronics" as const,
+    title: "LG C2 65 inch OLED TV",
+    askingPrice: 900,
+    condition: "good" as const,
+    hiddenCosts: [],
+    riskSignals: [],
+  };
+
+  it("names the sample size when a single comparable survived", () => {
+    const result = analyzeDeal({ ...tv, comparables: [{ price: 870, similarity: 0.8 }] });
+
+    expect(result.assumptions.join(" ")).toContain("single seller's price");
+  });
+
+  it("says something different, and still says it, at two", () => {
+    const result = analyzeDeal({
+      ...tv,
+      comparables: [{ price: 870, similarity: 0.8 }, { price: 910, similarity: 0.8 }],
+    });
+
+    expect(result.assumptions.join(" ")).toContain("very small sample");
+  });
+
+  it("stays quiet once the sample can speak for itself", () => {
+    const result = analyzeDeal({
+      ...tv,
+      comparables: [850, 870, 890, 910].map((price) => ({ price, similarity: 0.8 })),
+    });
+
+    expect(result.assumptions.join(" ")).not.toContain("small sample");
+    expect(result.assumptions.join(" ")).not.toContain("single seller");
+  });
+});
+
 describe("DealTough Intelligence Engine", () => {
   it("rewards a materially below-market low-risk deal", () => {
     const result = analyzeDeal({

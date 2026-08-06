@@ -185,6 +185,18 @@ function estimateMarketValue(input: DealInput): {
     );
   }
 
+  // Filtering hard enough to be right about *which* listings count means
+  // sometimes only one survives. That is still the best available answer, but
+  // a market value drawn from a single listing is one seller's price, and the
+  // report should not leave that to be inferred from a confidence percentage.
+  if (valid.length <= 2) {
+    assumptions.push(
+      valid.length === 1
+        ? "Only one comparable listing matched closely enough to use, so the market value reflects a single seller's price."
+        : "Only two comparable listings matched closely enough to use, so the market value rests on a very small sample.",
+    );
+  }
+
   if (condition === "unknown") {
     assumptions.push("Condition was unknown, so a protective category discount was applied.");
   } else if (residual < 0.95) {

@@ -33,6 +33,9 @@ import {
   fulfillCheckout,
   isPlusConfigured,
   refundAnalysis,
+  restoreAfterPayment,
+  subscriptionIdFromInvoice,
+  suspendForFailedPayment,
   verifyWebhookEvent,
 } from "./billing.js";
 
@@ -139,6 +142,15 @@ app.post("/api/billing/webhook", express.raw({ type: "application/json" }), asyn
     } else if (event.type === "customer.subscription.deleted") {
       // Covers cancellation and Stripe giving up after failed payments.
       await deactivatePlus((event.data.object as Stripe.Subscription).id);
+    } else if (event.type === "invoice.payment_failed") {
+      // Drop to the free allowance now rather than after Stripe's weeks-long
+      // dunning cycle ends in a cancellation.
+      const subscriptionId = subscriptionIdFromInvoice(event.data.object as Stripe.Invoice);
+      if (subscriptionId) await suspendForFailedPayment(subscriptionId);
+    } else if (event.type === "invoice.payment_succeeded") {
+      // Restores an account the previous branch suspended; a no-op otherwise.
+      const subscriptionId = subscriptionIdFromInvoice(event.data.object as Stripe.Invoice);
+      if (subscriptionId) await restoreAfterPayment(subscriptionId);
     }
     log.info("webhook.handled", { type: event.type });
   } catch (error) {

@@ -10,9 +10,10 @@ export interface CreditPack {
   label: string;
 }
 
+// One pack, deliberately. The web UI only ever rendered `creditPacks[0]`, so
+// the 50-pack was listed by the API and unreachable from the product.
 export const CREDIT_PACKS: CreditPack[] = [
-  { id: "pack_10", credits: 10, priceCents: 500, label: "10 credits — $5" },
-  { id: "pack_50", credits: 50, priceCents: 2000, label: "50 credits — $20" },
+  { id: "pack_10", credits: 10, priceCents: 400, label: "10 credits — $4" },
 ];
 
 export const SIGNUP_BONUS_CREDITS = 2;
@@ -142,6 +143,63 @@ export async function deactivatePlus(subscriptionId: string): Promise<void> {
       stripeSubscriptionId: null,
     },
   });
+}
+
+// A renewal that fails to collect must stop granting Plus value immediately.
+// Stripe's dunning cycle retries for weeks before it gives up and fires
+// `customer.subscription.deleted`, and until this existed that whole window
+// was a free month of Plus. The subscription and plan are left in place so a
+// successful retry can restore the account without a new checkout.
+export async function suspendForFailedPayment(subscriptionId: string): Promise<void> {
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({
+    where: { stripeSubscriptionId: subscriptionId },
+  });
+  if (!user) return;
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      subscriptionStatus: "past_due",
+      monthlyAllowance: FREE_MONTHLY_ALLOWANCE,
+    },
+  });
+}
+
+// The other half of the above: without it, anyone whose card failed once would
+// sit at the free allowance forever while still being billed. Deliberately
+// only acts on a past_due account — every renewal fires this event, and
+// resetting usage on each one would hand out extra analyses mid-window.
+export async function restoreAfterPayment(subscriptionId: string): Promise<void> {
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({
+    where: { stripeSubscriptionId: subscriptionId },
+  });
+  if (!user || user.subscriptionStatus !== "past_due") return;
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      subscriptionStatus: "active",
+      monthlyAllowance: PLUS_MONTHLY_ALLOWANCE,
+    },
+  });
+}
+
+// Stripe moved the subscription reference out of `invoice.subscription` and
+// into `invoice.parent.subscription_details.subscription` in the 2025 API
+// versions. This account is on 2026-06-24.dahlia, but read both shapes so a
+// version pin or rollback doesn't silently stop resolving the subscription.
+export function subscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
+  const legacy = (invoice as unknown as { subscription?: string | { id: string } }).subscription;
+  if (typeof legacy === "string") return legacy;
+  if (legacy && typeof legacy === "object") return legacy.id;
+
+  const current = invoice.parent?.subscription_details?.subscription;
+  if (typeof current === "string") return current;
+  if (current && typeof current === "object") return current.id;
+
+  return null;
 }
 
 // Idempotent via the unique constraint on stripeSessionId, not application

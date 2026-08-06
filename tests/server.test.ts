@@ -1,4 +1,4 @@
-import type { Server } from "node:http";
+import { request as httpRequest, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -314,6 +314,51 @@ describe("billing input validation", () => {
   it("requires a session to start a checkout", async () => {
     const res = await post("/api/billing/checkout", { packId: "starter" });
     expect(res.status).toBe(401);
+  });
+});
+
+// Sending a Host header through fetch is unreliable (undici treats it as
+// forbidden), so these go through node:http, which sends exactly what it is
+// given and does not follow the redirect.
+function rawRequest(method: string, path: string, host: string) {
+  return new Promise<{ status: number; location?: string }>((resolve, reject) => {
+    const { port } = server.address() as AddressInfo;
+    const req = httpRequest(
+      { host: "127.0.0.1", port, path, method, headers: { host } },
+      (res) => {
+        res.resume();
+        resolve({ status: res.statusCode!, location: res.headers.location });
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+describe("canonical host", () => {
+  it("redirects a www page request to the apex, keeping the path and query", async () => {
+    const res = await rawRequest("GET", "/d/abc123?ref=email", "www.dealtoughai.com");
+    expect(res.status).toBe(301);
+    expect(res.location).toBe("http://dealtoughai.com/d/abc123?ref=email");
+  });
+
+  // Stripe does not follow redirects. If the webhook ever arrives on www it
+  // has to be handled, not bounced, or payments go silently unfulfilled --
+  // which is the exact failure a wrong webhook URL already caused once.
+  it("does not redirect a POST", async () => {
+    const res = await rawRequest("POST", "/api/billing/webhook", "www.dealtoughai.com");
+    expect(res.status).not.toBe(301);
+  });
+
+  it("leaves the apex alone", async () => {
+    const res = await rawRequest("GET", "/health", "dealtoughai.com");
+    expect(res.status).toBe(200);
+  });
+
+  // The Railway domain stays live and must keep serving, not redirect.
+  it("leaves a non-www host alone", async () => {
+    const res = await rawRequest("GET", "/health", "dealtough-production.up.railway.app");
+    expect(res.status).toBe(200);
   });
 });
 

@@ -113,6 +113,21 @@ setInterval(() => {
 export const app = express();
 app.set("trust proxy", 1); // Railway edge proxy — makes req.ip the real client IP
 
+// One canonical host. The session cookie is host-only (no `domain` set), so
+// serving the app on both www and the apex would sign people out whenever they
+// crossed between them. GET/HEAD only, deliberately: the page is only ever
+// served from the canonical host, so no API call or Stripe webhook can
+// originate from www — and redirecting a POST would put the Stripe webhook at
+// the mercy of a 301 it does not follow.
+app.use((req, res, next) => {
+  const host = req.get("host");
+  if ((req.method === "GET" || req.method === "HEAD") && host?.startsWith("www.")) {
+    res.redirect(301, `${req.protocol}://${host.slice(4)}${req.originalUrl}`);
+    return;
+  }
+  next();
+});
+
 // Must be registered BEFORE the global express.json() below — Stripe webhook
 // signature verification needs the raw, unparsed body for this one route only.
 app.post("/api/billing/webhook", express.raw({ type: "application/json" }), async (req, res) => {

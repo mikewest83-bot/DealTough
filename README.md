@@ -4,7 +4,9 @@
 
 Paste a marketplace listing (text + photos), get back a 100-point Deal Score with price
 targets, risk flags, and a copy-ready negotiation message. Live at
-`https://dealtough-production.up.railway.app` (web UI at `/`).
+`https://dealtoughai.com` (web UI at `/`). `www` 301s to the apex — the session
+cookie is host-only, so two live hosts would mean two separate sign-ins. The
+original `https://dealtough-production.up.railway.app` stays active as well.
 
 ## Architecture
 

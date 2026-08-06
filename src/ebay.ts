@@ -159,6 +159,32 @@ export function titleSimilarity(reference: string, candidate: string): number {
 // word or two.
 const MIN_SIMILARITY = 0.34;
 
+// A token mixing letters and digits is almost always a model code: "c2",
+// "hrx217", "dck299p2", "f150", "m18". Weighting it double is not enough —
+// a search for an LG C2 returned fifty 2026 C6 sets at $2,000 each, every one
+// scoring above the similarity floor on "lg / 65 / inch / oled / tv" while
+// missing the single token that says which television it is. That values a
+// used C2 against next year's model and reports a great deal.
+//
+// So if the reference names a model, the candidate has to name it too.
+const isModelCode = (token: string): boolean =>
+  /[a-z]/.test(token) && /\d/.test(token);
+
+// Prefix-tolerant in both directions: "hrx217hya" and "hrx217vka4" are trim
+// levels of the reference's "hrx217" and belong in the comparable set, while
+// "c6" and "c2" are neither a prefix of the other and do not.
+function mentionsSameModel(reference: string, candidate: string): boolean {
+  const codes = tokenize(reference).filter(isModelCode);
+  if (!codes.length) return true;
+
+  const candidateCodes = tokenize(candidate).filter(isModelCode);
+  return codes.some((code) =>
+    candidateCodes.some(
+      (other) => other.startsWith(code) || code.startsWith(other),
+    ),
+  );
+}
+
 // Phrases that mark a hit as an accessory, part, or replica rather than the
 // thing itself. Only disqualifying when the phrase is absent from the
 // reference title — if you are actually shopping for a charger, "charger" is
@@ -184,7 +210,27 @@ const ACCESSORY_MARKERS = [
   "cooking grate", "grill grates", "saw blade", "mower blade",
   "replacement blade", "drive belt", "carburetor", "spark plug",
   "gas cylinder", "armrest pad", "caster", "rotisserie", "gasket",
+  "lot of", "bundle", "pallet", "wholesale", "case of",
 ];
+
+// Multi-item bundles: a search for one oak dining table returns six- and
+// seven-piece sets at $1,800-$3,900, priced for a table plus its chairs.
+//
+// Counted rather than phrase-matched, because "6-Piece Dining Set" and
+// "dining set 6 piece" mean the same thing and no list of phrases catches
+// both word orders.
+function pieceCount(title: string): number | null {
+  const match = title.toLowerCase().match(/\b(\d{1,3})\s*-?\s*(?:pc|pcs|piece)\b/);
+  return match ? Number(match[1]) : null;
+}
+
+// A bundle is only wrong when it is a different size from what was searched
+// for. Asking for a 6-piece set and being shown 6-piece sets is correct.
+function isDifferentBundle(candidateTitle: string, referenceTitle: string): boolean {
+  const candidate = pieceCount(candidateTitle);
+  if (candidate === null) return false;
+  return candidate !== pieceCount(referenceTitle);
+}
 
 function isAccessory(candidateTitle: string, referenceTitle: string): boolean {
   const candidate = candidateTitle.toLowerCase();
@@ -285,6 +331,8 @@ function buildComparables(
     if (referenceTitle) {
       const title = row.title ?? "";
       if (isAccessory(title, referenceTitle)) continue;
+      if (isDifferentBundle(title, referenceTitle)) continue;
+      if (!mentionsSameModel(referenceTitle, title)) continue;
       similarity = titleSimilarity(referenceTitle, title);
       if (similarity < MIN_SIMILARITY) continue;
     }

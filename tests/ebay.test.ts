@@ -16,6 +16,62 @@ const {
 
 // Real titles from a live Weber Genesis II search. All 50 results were parts;
 // the accessory list caught only the ones saying "cover".
+// Real titles from live searches. The C6 case is the dangerous one: it
+// inflates value, which is the direction that tells someone to buy.
+describe("a model number is not optional", () => {
+  const keep = (reference: string, title: string) =>
+    mapBrowseResultsToComparables(
+      { itemSummaries: [{ title, price: { value: "500.00", currency: "USD" } }] },
+      reference,
+    ).length;
+
+  it("rejects next year's model of the same product line", () => {
+    const reference = "LG C2 65 inch OLED TV";
+
+    expect(keep(reference, "LG 65 inch OLED evo AI C6 4K Smart webOS TV (2026)")).toBe(0);
+    expect(keep(reference, "LG OLED65C5P 65” C5 OLED evo 4K Smart TV 2025")).toBe(0);
+    expect(keep(reference, "LG OLED65C2PUA 65 inch C2 OLED evo 4K Smart TV")).toBe(1);
+  });
+
+  it("keeps trim levels of the model the search named", () => {
+    // hrx217hya and hrx217vka4 are the same mower with different transmissions.
+    const reference = "Honda HRX217 self propelled lawn mower";
+
+    expect(keep(reference, 'Honda HRX217HYA 21" Self Propelled Lawn Mower w Roto Stop')).toBe(1);
+    expect(keep(reference, "Honda HRX217VKA4 21 in. NeXite Self Propelled Lawn Mower")).toBe(1);
+  });
+
+  it("still matches a truck whose listing spells the model differently", () => {
+    expect(keep("2019 Ford F-150 XLT SuperCrew 4x4", "2019 Ford F-150 SUPERCREW")).toBe(1);
+  });
+
+  it("stays out of the way when the search names no model at all", () => {
+    // Nothing to enforce; this must not become a filter on plain-English titles.
+    expect(keep("solid oak dining table seats 6", "Solid Oak Dining Table Farmhouse")).toBe(1);
+    expect(keep("Herman Miller Aeron chair size B", "Herman Miller Aeron Chair Graphite")).toBe(1);
+  });
+});
+
+// A search for one table should not be priced against a table plus six chairs.
+describe("bundles are not single items", () => {
+  const keep = (reference: string, title: string) =>
+    mapBrowseResultsToComparables(
+      { itemSummaries: [{ title, price: { value: "1900.00", currency: "USD" } }] },
+      reference,
+    ).length;
+
+  it("rejects multi-piece dining sets when the search wanted a table", () => {
+    const reference = "solid oak dining table seats 6";
+
+    expect(keep(reference, "Elements Summerville 6-Piece Dining Set Oak Antique White")).toBe(0);
+    expect(keep(reference, "7 Pc Brown Oak Dining Set Kitchen Butterfly Leaf Table")).toBe(0);
+  });
+
+  it("keeps them when a set is what the search asked for", () => {
+    expect(keep("oak dining set 6 piece", "Elements Summerville 6-Piece Dining Set Oak")).toBe(1);
+  });
+});
+
 describe("machine wear parts are not the machine", () => {
   const grillParts = [
     "Weber Genesis 300 Flavorizer Bars 5 Pack Porcelain Enameled 7620 7621",

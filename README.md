@@ -42,7 +42,18 @@ Two filters exist specifically because parts outnumber the things they belong to
   would remove everything, the comparables are kept — an asking price that far off is more
   likely the error.
 
-Both are tuned against live results, not assumed; see the comments in `src/ebay.ts`.
+Two more exist because the wrong *thing* can be priced right:
+
+- **Model gate.** If the search names a model — any token mixing letters and digits, like
+  `C2`, `HRX217`, `F-150` — a comparable has to name it too. Prefix-tolerant, so
+  `HRX217HYA` counts as an `HRX217` but `C6` does not count as a `C2`. Without this, an
+  LG C2 was valued against fifty brand-new 2026 C6 sets and came out 61% high.
+- **Bundle count.** `6-Piece Dining Set` is not a comparable for one table. Counted rather
+  than phrase-matched, since "6-Piece Dining Set" and "dining set 6 piece" are the same
+  product and no phrase list catches both word orders. A bundle only fails when its size
+  differs from what was searched for.
+
+All four are tuned against live results, not assumed; see the comments in `src/ebay.ts`.
 
 ### Asking prices are not selling prices
 

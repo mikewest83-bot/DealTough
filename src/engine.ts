@@ -106,9 +106,24 @@ function residualConditionGap(
 // from. Revisit if the Marketplace Insights scope is ever granted.
 const ASKING_PRICE_PREMIUM = 0.12;
 
+// When every comparable is priced far below the asking price, exactly one of
+// two things is true and nothing here can tell which: the listing is wildly
+// overpriced, or the search returned parts instead of the item. A live search
+// for a Weber Genesis II grill produced 50 results and not one was a grill,
+// medianing $46 against a $400 asking price.
+//
+// The comparables are kept either way — discarding them would rate a genuinely
+// overpriced listing as fair, which is the more dangerous mistake. But both
+// explanations mean the number is weak, so the report says so and confidence
+// stops claiming support the comparables do not provide. Mirrors the price
+// floor in ebay.ts; that filter and this warning describe the same cliff.
+const SUSPECT_COMPARABLE_RATIO = 0.35;
+
 function estimateMarketValue(input: DealInput): {
   fairMarketValue: number;
   comparableCount: number;
+  activeShare: number;
+  suspectComparables: boolean;
   assumptions: string[];
 } {
   const config = CATEGORY_CONFIG[input.category];
@@ -122,6 +137,8 @@ function estimateMarketValue(input: DealInput): {
     return {
       fairMarketValue: input.askingPrice,
       comparableCount: 0,
+      activeShare: 1,
+      suspectComparables: false,
       assumptions,
     };
   }
@@ -158,6 +175,16 @@ function estimateMarketValue(input: DealInput): {
     );
   }
 
+  const suspectComparables =
+    input.askingPrice > 0 &&
+    valid.every((c) => c.price < input.askingPrice * SUSPECT_COMPARABLE_RATIO);
+
+  if (suspectComparables) {
+    assumptions.push(
+      `Every comparable was priced under ${(SUSPECT_COMPARABLE_RATIO * 100).toFixed(0)}% of the asking price. Either this listing is far above market, or the comparables are parts and accessories rather than the item itself — worth checking before trusting the market value.`,
+    );
+  }
+
   if (condition === "unknown") {
     assumptions.push("Condition was unknown, so a protective category discount was applied.");
   } else if (residual < 0.95) {
@@ -169,6 +196,8 @@ function estimateMarketValue(input: DealInput): {
   return {
     fairMarketValue: roundMoney(Math.max(1, adjusted)),
     comparableCount: valid.length,
+    activeShare,
+    suspectComparables,
     assumptions,
   };
 }
@@ -288,8 +317,24 @@ function scoreMarket(input: DealInput): number {
   return clamp((demandQuality * 6) + (inventoryQuality * 4), 0, 10);
 }
 
-function calculateConfidence(input: DealInput, comparableCount: number): number {
-  const compScore = clamp(comparableCount / 8, 0, 1) * 4;
+// An asking price is one seller's opinion; a sold price is what two people
+// actually agreed on. Comparables built from active listings are therefore
+// weaker evidence, and confidence should say so — the asking-price haircut
+// corrects the estimate, but it cannot make the estimate any better known.
+// Worth at most a full point of the ten, so an otherwise complete listing
+// still reports respectable confidence.
+const ACTIVE_COMPARABLE_PENALTY = 0.25;
+
+function calculateConfidence(
+  input: DealInput,
+  comparableCount: number,
+  activeShare: number,
+  suspectComparables: boolean,
+): number {
+  const evidenceQuality =
+    (1 - ACTIVE_COMPARABLE_PENALTY * clamp(activeShare, 0, 1)) *
+    (suspectComparables ? 0.5 : 1);
+  const compScore = clamp(comparableCount / 8, 0, 1) * 4 * evidenceQuality;
   const completeness = clamp(input.requiredFieldsPresent ?? 0.65, 0, 1) * 2.5;
   const photos = clamp(input.photoQuality ?? 0.6, 0, 1) * 1.5;
   const conditionKnown = input.condition && input.condition !== "unknown" ? 1 : 0.35;
@@ -363,7 +408,12 @@ export function analyzeDeal(input: DealInput): DealRecommendation {
   const trueCostScore = scoreTrueCost(costs.hiddenCostTotal, input.askingPrice);
   const negotiationScore = scoreNegotiation(input);
   const marketScore = scoreMarket(input);
-  const confidenceScore = calculateConfidence(input, market.comparableCount);
+  const confidenceScore = calculateConfidence(
+    input,
+    market.comparableCount,
+    market.activeShare,
+    market.suspectComparables,
+  );
 
   const breakdown: ScoreBreakdown = {
     value: Math.round(valueScore),

@@ -14,6 +14,59 @@ const {
   titleSimilarity,
 } = await import("../src/ebay.js");
 
+// Real titles from a live Weber Genesis II search. All 50 results were parts;
+// the accessory list caught only the ones saying "cover".
+describe("machine wear parts are not the machine", () => {
+  const grillParts = [
+    "Weber Genesis 300 Flavorizer Bars 5 Pack Porcelain Enameled 7620 7621",
+    "Burner Tubes for Weber Genesis II 300 Series Gas Grill E310 E315 E335",
+    "CANDANA Warming Rack for Weber Genesis II 300 Series Gas Grill",
+    "WEBER GENESIS II 310 NG NATURAL GAS or LPG PROPANE GRILL ORIFICES",
+    "Gas Grill Replacement Parts Manifold Main Burner Control Valve for Weber",
+    "Grill Griddle 7658 for Weber Grill Griddle Spirit 200 300 Genesis Silver",
+  ];
+
+  for (const title of grillParts) {
+    it(`drops "${title.slice(0, 40)}..."`, () => {
+      const result = mapBrowseResultsToComparables(
+        { itemSummaries: [{ title, price: { value: "49.89", currency: "USD" } }] },
+        "Weber Genesis II E-310 gas grill",
+      );
+
+      expect(result).toEqual([]);
+    });
+  }
+
+  it("keeps the grill itself", () => {
+    const result = mapBrowseResultsToComparables(
+      {
+        itemSummaries: [{
+          title: "Weber Genesis II E-310 3 Burner Propane Gas Grill Black",
+          price: { value: "399.00", currency: "USD" },
+        }],
+      },
+      "Weber Genesis II E-310 gas grill",
+    );
+
+    expect(result).toHaveLength(1);
+  });
+
+  it("does not drop a part when the part is what you are shopping for", () => {
+    // The markers only disqualify when absent from the reference title.
+    const result = mapBrowseResultsToComparables(
+      {
+        itemSummaries: [{
+          title: "Weber Genesis 300 Flavorizer Bars Stainless Steel",
+          price: { value: "49.89", currency: "USD" },
+        }],
+      },
+      "Weber Genesis flavorizer bars",
+    );
+
+    expect(result).toHaveLength(1);
+  });
+});
+
 describe("mapBrowseResultsToComparables", () => {
   it("maps normal Browse API results to honestly-labeled comparables", () => {
     const result = mapBrowseResultsToComparables({

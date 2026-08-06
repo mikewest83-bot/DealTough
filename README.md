@@ -172,6 +172,15 @@ proxy immediately after.
   — asking prices, not sold prices. The engine discounts for that (see below), but a
   12% estimate is not a measurement. The response labels which it used
   (`comparablesSource`).
+- **Vehicles barely work.** eBay Browse returns almost nothing in Cars & Trucks — a live
+  sweep got 1 result for an F-150, 1 for a Tacoma, and 0 for a Civic. Vehicle market
+  values therefore rest on one comparable or none, which confidence reflects but which no
+  amount of filtering can fix. Browse does not index most eBay Motors inventory.
+- **Some items simply are not on eBay.** A Weber Genesis II E-310 search returns 50
+  results and no grills — only flavorizer bars and burner tubes. The accessory list
+  catches most of them now, but when everything left is priced far under the asking
+  price, the engine says so and halves its confidence rather than reporting a parts
+  price as the market.
 - Category → eBay search mapping is keyword-based, best-effort; generic titles pull
   noisy comps. Relevance filtering discards the worst of them, which correctly drags the
   reported confidence down rather than hiding the problem.

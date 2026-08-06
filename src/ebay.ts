@@ -171,6 +171,19 @@ const ACCESSORY_MARKERS = [
   "1:18", "1/18", "1:24", "1/24", "bracket", "adapter", "cable",
   "charger", "remote", "filter", "floor mat", "seat cover", "emblem",
   "badge", "t-shirt", "shirt", "hat", "mug", "keyring", "pin",
+  // Machine wear parts. A live sweep of a Weber Genesis II search returned 50
+  // results and not one was a grill — flavorizer bars, burner tubes, warming
+  // racks and orifices, none of which the list above catches. Every category
+  // has an equivalent: blades and belts for mowers, casters and gas cylinders
+  // for chairs, arbors and guards for saws.
+// Phrases, not bare words: grills are titled "3 Burner Propane Gas Grill" and
+// saws ship "with blade", so "burner" and "blade" on their own delete the
+// items they were meant to protect.
+  "flavorizer", "burner tube", "burner control", "warming rack", "griddle",
+  "orifice", "manifold", "igniter", "ignitor", "heat shield", "heat plate",
+  "cooking grate", "grill grates", "saw blade", "mower blade",
+  "replacement blade", "drive belt", "carburetor", "spark plug",
+  "gas cylinder", "armrest pad", "caster", "rotisserie", "gasket",
 ];
 
 function isAccessory(candidateTitle: string, referenceTitle: string): boolean {

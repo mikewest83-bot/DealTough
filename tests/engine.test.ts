@@ -56,11 +56,82 @@ describe("asking prices are not selling prices", () => {
     expect(active.assumptions.join(" ")).toContain("12%");
   });
 
+  it("reports lower confidence for asking prices than for completed sales", () => {
+    // The haircut corrects the estimate; it does not make the estimate any
+    // better known. Confidence has to fall too, or the report understates
+    // how much of itself is inference.
+    const sold = analyzeDeal({ ...listing, comparables: comparables(true) });
+    const active = analyzeDeal({ ...listing, comparables: comparables(false) });
+
+    expect(active.confidencePercent).toBeLessThan(sold.confidencePercent);
+  });
+
+  it("does not penalize confidence when there were no comparables either way", () => {
+    // Nothing to grade the quality of — the missing-comparable penalty
+    // already covers this case, and charging twice would double-count.
+    const none = analyzeDeal({ ...listing, comparables: [] });
+
+    expect(none.confidencePercent).toBeGreaterThan(0);
+  });
+
   it("does not adjust when there are no comparables to adjust", () => {
     const none = analyzeDeal({ ...listing, comparables: [] });
 
     expect(none.fairMarketValue).toBe(190);
     expect(none.assumptions.join(" ")).not.toContain("asking and selling");
+  });
+});
+
+// A live search for "Weber Genesis II E-310 gas grill" returned 50 results and
+// not one of them was a grill — flavorizer bars, burner tubes and warming
+// racks, medianing $46 against a $400 asking price. The price floor removed
+// all of them and then put them back, because removing everything is how an
+// overpriced listing gets rated fair.
+describe("comparables that are all far below the asking price", () => {
+  const grill = {
+    category: "outdoor_equipment" as const,
+    title: "Weber Genesis II E-310 gas grill",
+    askingPrice: 400,
+    condition: "good" as const,
+    hiddenCosts: [],
+    riskSignals: [],
+  };
+  const parts = [15.99, 27.95, 34.99, 48.99, 49.89].map((price) => ({
+    price,
+    similarity: 0.6,
+  }));
+
+  it("warns rather than quietly reporting a parts price as the market", () => {
+    const result = analyzeDeal({ ...grill, comparables: parts });
+
+    expect(result.assumptions.join(" ")).toContain("parts and accessories");
+  });
+
+  it("still uses them, because the listing might simply be overpriced", () => {
+    // Discarding them would fall back to the asking price and rate a $400
+    // ask for a $46 item as fair. That is the more expensive error.
+    const result = analyzeDeal({ ...grill, comparables: parts });
+
+    expect(result.fairMarketValue).toBeLessThan(100);
+  });
+
+  it("reports lower confidence than a comparable set that is not suspect", () => {
+    const suspect = analyzeDeal({ ...grill, comparables: parts });
+    const sane = analyzeDeal({
+      ...grill,
+      comparables: parts.map((c) => ({ ...c, price: c.price * 8 })),
+    });
+
+    expect(suspect.confidencePercent).toBeLessThan(sane.confidencePercent);
+  });
+
+  it("does not fire when even one comparable is priced like the item", () => {
+    const result = analyzeDeal({
+      ...grill,
+      comparables: [...parts, { price: 380, similarity: 0.9 }],
+    });
+
+    expect(result.assumptions.join(" ")).not.toContain("parts and accessories");
   });
 });
 

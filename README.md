@@ -55,6 +55,13 @@ Two more exist because the wrong *thing* can be priced right:
 
 All four are tuned against live results, not assumed; see the comments in `src/ebay.ts`.
 
+Before any of that runs, the search itself has to return something. Browse ANDs every
+word in the query, so a full listing title is often too specific to match anything —
+`2015 Honda Civic EX sedan` returns 0 results while `2015 Honda Civic` returns 3 and
+`Honda Civic` returns 176. The lookup therefore walks from the full title toward shorter
+prefixes and stops at the first query returning enough to work with, flooring at three
+words. Relevance is always judged against the full title, never the shortened query.
+
 ### Asking prices are not selling prices
 
 Without the Marketplace Insights scope every comparable is an active listing, so fair
@@ -183,10 +190,11 @@ proxy immediately after.
   — asking prices, not sold prices. The engine discounts for that (see below), but a
   12% estimate is not a measurement. The response labels which it used
   (`comparablesSource`).
-- **Vehicles barely work.** eBay Browse returns almost nothing in Cars & Trucks — a live
-  sweep got 1 result for an F-150, 1 for a Tacoma, and 0 for a Civic. Vehicle market
-  values therefore rest on one comparable or none, which confidence reflects but which no
-  amount of filtering can fix. Browse does not index most eBay Motors inventory.
+- **Vehicle comparables are thin**, though far less than they look. A sweep once returned
+  1 result for an F-150 and 0 for a Civic, which read as eBay not indexing Motors
+  inventory. It was the query: Browse ANDs every word, and the full listing title was too
+  specific to match anything. With broadening (see above) the same searches return 10 and
+  3. Still thinner than electronics, and confidence says so.
 - **Some items simply are not on eBay.** A Weber Genesis II E-310 search returns 50
   results and no grills — only flavorizer bars and burner tubes. The accessory list
   catches most of them now, but when everything left is priced far under the asking

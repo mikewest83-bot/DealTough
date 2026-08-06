@@ -472,31 +472,84 @@ async function fetchSoldComparables(params: EbaySearchParams): Promise<Comparabl
   return mapItemSalesToComparables(await res.json(), params.title, params.askingPrice);
 }
 
+// Browse ANDs every word in the query, so an over-specific title matches
+// nothing at all. Measured on live eBay in Cars & Trucks:
+//
+//   "2015 Honda Civic EX sedan"          0 results
+//   "2015 Honda Civic"                   3
+//   "Honda Civic"                      176
+//   "2019 Ford F-150 XLT SuperCrew 4x4"  1
+//   "2019 Ford F-150"                   42
+//
+// A listing title is the seller's prose, not a search query, and the longer it
+// runs the likelier it returns nothing. This looked exactly like "eBay does not
+// index vehicles" until the query was shortened.
+//
+// So walk from the full title toward shorter prefixes and stop at the first
+// query that returns enough to work with: the longest query that answers is
+// the most specific one available.
+const ENOUGH_RAW_RESULTS = 8;
+
+// Three words is the floor. Below it a search for a Civic starts returning
+// Accords, and while the year token usually saves us — it is weighted double,
+// so a wrong-year match lands under the similarity threshold — "2015 Honda"
+// is not a question worth asking.
+const QUERY_MIN_WORDS = 3;
+
+function queryLadder(title: string): string[] {
+  const words = title.trim().split(/\s+/).filter(Boolean);
+  const ladder = [words.join(" ")];
+  for (const size of [4, QUERY_MIN_WORDS]) {
+    if (words.length > size) ladder.push(words.slice(0, size).join(" "));
+  }
+  return [...new Set(ladder.filter(Boolean))];
+}
+
 async function fetchActiveComparables(params: EbaySearchParams): Promise<Comparable[]> {
   const token = await getAppToken();
-
-  const url = new URL(SEARCH_URL);
-  // The listing title alone. Appending the category word ("vehicle") pushed
-  // the search toward items whose titles literally say "vehicle", which is
-  // mostly accessories.
-  url.searchParams.set("q", params.title);
-  // Over-fetch, because relevance and outlier filtering discard most of it.
-  url.searchParams.set("limit", String(params.limit ?? 50));
   const activeCategory = params.category && CATEGORY_IDS[params.category];
-  if (activeCategory) url.searchParams.set("category_ids", activeCategory);
 
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
-    },
-  });
+  let data: unknown = null;
+  let used = params.title;
+  let attempts = 0;
 
-  if (!res.ok) {
-    throw new Error(`eBay Browse API request failed: ${res.status}`);
+  for (const query of queryLadder(params.title)) {
+    const url = new URL(SEARCH_URL);
+    // The title alone. Appending the category word ("vehicle") pushed the
+    // search toward items whose titles literally say "vehicle", which is
+    // mostly accessories.
+    url.searchParams.set("q", query);
+    // Over-fetch, because relevance and outlier filtering discard most of it.
+    url.searchParams.set("limit", String(params.limit ?? 50));
+    if (activeCategory) url.searchParams.set("category_ids", activeCategory);
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`eBay Browse API request failed: ${res.status}`);
+    }
+
+    const body = await res.json();
+    attempts += 1;
+    data = body;
+    used = query;
+
+    const count = (body as { itemSummaries?: unknown[] })?.itemSummaries?.length ?? 0;
+    if (count >= ENOUGH_RAW_RESULTS) break;
   }
 
-  return mapBrowseResultsToComparables(await res.json(), params.title, params.askingPrice);
+  if (attempts > 1) {
+    log.debug("ebay.query_broadened", { title: params.title, used, attempts });
+  }
+
+  // Relevance is still judged against the full title, never the shortened
+  // query — broadening decides what eBay is asked, not what counts as a match.
+  return mapBrowseResultsToComparables(data, params.title, params.askingPrice);
 }
 
 export async function fetchComparables(params: EbaySearchParams): Promise<Comparable[]> {

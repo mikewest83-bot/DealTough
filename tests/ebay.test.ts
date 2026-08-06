@@ -18,6 +18,94 @@ const {
 // the accessory list caught only the ones saying "cover".
 // Real titles from live searches. The C6 case is the dangerous one: it
 // inflates value, which is the direction that tells someone to buy.
+// Browse ANDs the query, so the full listing title often matches nothing.
+describe("broadening an over-specific query", () => {
+  const queries: string[] = [];
+
+  const respondWith = (counts: number[]) => {
+    let call = 0;
+    vi.stubGlobal("fetch", async (input: string | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname.includes("oauth2/token")) {
+        return new Response(
+          JSON.stringify({ access_token: "t", expires_in: 7200 }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      queries.push(url.searchParams.get("q") ?? "");
+      const n = counts[Math.min(call++, counts.length - 1)];
+      return new Response(
+        JSON.stringify({
+          itemSummaries: Array.from({ length: n }, () => ({
+            title: "2015 Honda Civic EX Sedan",
+            price: { value: "11000.00", currency: "USD" },
+          })),
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    });
+  };
+
+  beforeEach(() => {
+    queries.length = 0;
+    clearComparableCache();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("shortens the title until eBay returns something to work with", async () => {
+    respondWith([0, 0, 12]);
+
+    await fetchComparables({ title: "2015 Honda Civic EX sedan", category: "vehicle" });
+
+    expect(queries).toEqual([
+      "2015 Honda Civic EX sedan",
+      "2015 Honda Civic EX",
+      "2015 Honda Civic",
+    ]);
+  });
+
+  it("asks once when the full title already answers", async () => {
+    respondWith([20]);
+
+    await fetchComparables({ title: "2015 Honda Civic EX sedan", category: "vehicle" });
+
+    expect(queries).toEqual(["2015 Honda Civic EX sedan"]);
+  });
+
+  it("never goes below three words", async () => {
+    respondWith([0, 0, 0, 0]);
+
+    await fetchComparables({ title: "2015 Honda Civic EX sedan", category: "vehicle" });
+
+    expect(queries).toHaveLength(3);
+    for (const q of queries) {
+      expect(q.split(" ").length).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("does not broaden a title that is already short", async () => {
+    respondWith([0]);
+
+    await fetchComparables({ title: "Herman Miller Aeron", category: "furniture" });
+
+    expect(queries).toEqual(["Herman Miller Aeron"]);
+  });
+
+  it("still judges relevance against the full title, not the shortened query", async () => {
+    // The broadened query returns a Civic; the reference is a Civic. If
+    // relevance were scored against "2015 Honda Civic" the extra words in the
+    // reference would be invisible, which is the same bug in reverse.
+    respondWith([0, 0, 10]);
+
+    const result = await fetchComparables({
+      title: "2015 Honda Civic EX sedan",
+      category: "vehicle",
+    });
+
+    expect(result.length).toBeGreaterThan(0);
+  });
+});
+
 describe("a model number is not optional", () => {
   const keep = (reference: string, title: string) =>
     mapBrowseResultsToComparables(

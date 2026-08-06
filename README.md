@@ -44,6 +44,18 @@ Two filters exist specifically because parts outnumber the things they belong to
 
 Both are tuned against live results, not assumed; see the comments in `src/ebay.ts`.
 
+### Asking prices are not selling prices
+
+Without the Marketplace Insights scope every comparable is an active listing, so fair
+market value would otherwise be an average of what sellers *want*. The engine reduces it
+by up to 12%, scaled by the weighted share of comparables that are active — so the
+adjustment shrinks to nothing the moment real sold data arrives, with no second change
+needed. It is written into the report's assumptions rather than applied silently.
+
+The 12% is a calibration estimate, not a measurement: measuring the asking-to-selling gap
+would need exactly the sold data it stands in for. It errs low on purpose, since
+overstating what something is worth is the more expensive mistake for a buyer.
+
 Results are cached in-process for 6 hours, keyed on title, category and asking price —
 all three change the answer. Repeat analyses of the same item do not re-hit eBay.
 
@@ -157,8 +169,9 @@ proxy immediately after.
 ## Honest limitations
 
 - Until eBay approves the Marketplace Insights scope, comparables are **active listings**
-  — asking prices, not sold prices — so fair-market-value estimates skew slightly high.
-  The response labels which it used (`comparablesSource`).
+  — asking prices, not sold prices. The engine discounts for that (see below), but a
+  12% estimate is not a measurement. The response labels which it used
+  (`comparablesSource`).
 - Category → eBay search mapping is keyword-based, best-effort; generic titles pull
   noisy comps. Relevance filtering discards the worst of them, which correctly drags the
   reported confidence down rather than hiding the problem.

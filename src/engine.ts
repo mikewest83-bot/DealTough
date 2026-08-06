@@ -87,6 +87,25 @@ function residualConditionGap(
   return coverage * gap + (1 - coverage);
 }
 
+// An active listing is what a seller hopes for; a completed sale is what a
+// buyer paid. On secondhand goods the second is reliably lower — sellers
+// accept offers below list, and the listings that never sell are precisely
+// the overpriced ones, so they linger in search results and skew the median
+// upward.
+//
+// The sold-vs-active weighting in comparableWeight is relative, so when every
+// comparable is an active listing it cancels out entirely and fair market
+// value ends up anchored to asking prices with nothing correcting it. This is
+// the absolute correction for that case.
+//
+// 12% is a calibration estimate, not a measurement: measuring it would need
+// the sold data this exists to substitute for. It is deliberately on the
+// conservative side and errs downward, because the two directions are not
+// equally costly — understating value makes a good deal look ordinary, while
+// overstating it tells someone to buy something they should have walked away
+// from. Revisit if the Marketplace Insights scope is ever granted.
+const ASKING_PRICE_PREMIUM = 0.12;
+
 function estimateMarketValue(input: DealInput): {
   fairMarketValue: number;
   comparableCount: number;
@@ -116,7 +135,28 @@ function estimateMarketValue(input: DealInput): {
 
   const conditionDiscount = config.conditionDiscounts[condition] ?? config.conditionDiscounts.unknown;
   const residual = residualConditionGap(valid, input.condition, weightOf);
-  const adjusted = base * (1 - conditionDiscount * residual);
+
+  // Weighted rather than counted, so a single loosely-matching sold item does
+  // not buy off the whole adjustment.
+  let soldWeight = 0;
+  let totalWeight = 0;
+  for (const comp of valid) {
+    const weight = weightOf(comp);
+    totalWeight += weight;
+    if (comp.sold) soldWeight += weight;
+  }
+  const activeShare = totalWeight ? 1 - soldWeight / totalWeight : 1;
+  const askingBias = ASKING_PRICE_PREMIUM * activeShare;
+
+  const adjusted = base * (1 - conditionDiscount * residual) * (1 - askingBias);
+
+  if (askingBias > 0.005) {
+    assumptions.push(
+      activeShare > 0.995
+        ? `No completed sales were available, so market value was taken from active listings and reduced ${(askingBias * 100).toFixed(0)}% to allow for the gap between asking and selling prices.`
+        : `Comparables were mostly active listings rather than completed sales, so market value was reduced ${(askingBias * 100).toFixed(0)}% to allow for the gap between asking and selling prices.`,
+    );
+  }
 
   if (condition === "unknown") {
     assumptions.push("Condition was unknown, so a protective category discount was applied.");

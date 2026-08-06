@@ -1,6 +1,69 @@
 import { describe, expect, it } from "vitest";
 import { analyzeDeal } from "../src/index.js";
 
+// Without a Marketplace Insights grant every comparable eBay returns is an
+// active listing. The sold weighting in comparableWeight is relative, so in
+// that case it cancels out and fair market value silently becomes an average
+// of what sellers are asking.
+describe("asking prices are not selling prices", () => {
+  const listing = {
+    category: "electronics" as const,
+    title: "Sony WH-1000XM5",
+    askingPrice: 190,
+    condition: "good" as const,
+    hiddenCosts: [],
+    riskSignals: [],
+  };
+  const prices = [200, 210, 190, 205];
+  const comparables = (sold: boolean) =>
+    prices.map((price) => ({ price, similarity: 0.9, sold }));
+
+  it("values a set of active listings below the same prices as completed sales", () => {
+    const sold = analyzeDeal({ ...listing, comparables: comparables(true) });
+    const active = analyzeDeal({ ...listing, comparables: comparables(false) });
+
+    expect(active.fairMarketValue).toBeLessThan(sold.fairMarketValue);
+    expect(active.fairMarketValue / sold.fairMarketValue).toBeCloseTo(0.88, 2);
+  });
+
+  it("scales the adjustment down as real sales enter the set", () => {
+    const active = analyzeDeal({ ...listing, comparables: comparables(false) });
+    const mixed = analyzeDeal({
+      ...listing,
+      comparables: [
+        { price: 200, similarity: 0.9, sold: true },
+        { price: 210, similarity: 0.9, sold: true },
+        { price: 190, similarity: 0.9, sold: false },
+        { price: 205, similarity: 0.9, sold: false },
+      ],
+    });
+    const sold = analyzeDeal({ ...listing, comparables: comparables(true) });
+
+    expect(mixed.fairMarketValue).toBeGreaterThan(active.fairMarketValue);
+    expect(mixed.fairMarketValue).toBeLessThan(sold.fairMarketValue);
+  });
+
+  it("leaves completed sales alone", () => {
+    const sold = analyzeDeal({ ...listing, comparables: comparables(true) });
+
+    expect(sold.assumptions.join(" ")).not.toContain("asking");
+  });
+
+  it("says so in the report rather than adjusting silently", () => {
+    const active = analyzeDeal({ ...listing, comparables: comparables(false) });
+
+    expect(active.assumptions.join(" ")).toContain("No completed sales were available");
+    expect(active.assumptions.join(" ")).toContain("12%");
+  });
+
+  it("does not adjust when there are no comparables to adjust", () => {
+    const none = analyzeDeal({ ...listing, comparables: [] });
+
+    expect(none.fairMarketValue).toBe(190);
+    expect(none.assumptions.join(" ")).not.toContain("asking and selling");
+  });
+});
+
 describe("DealTough Intelligence Engine", () => {
   it("rewards a materially below-market low-risk deal", () => {
     const result = analyzeDeal({

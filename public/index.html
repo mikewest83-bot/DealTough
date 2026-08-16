@@ -205,7 +205,7 @@ loginForm.addEventListener("submit",e=>{e.preventDefault();auth("/api/auth/login
 registerForm.addEventListener("submit",e=>{e.preventDefault();const p=$("register-password").value,c=$("register-confirm").value,s=$("register-status");if(p!==c){setStatus(s,"Passwords do not match.","error");return}auth("/api/auth/register",$("register-email").value.trim(),p,s,registerForm.querySelector("button[type=submit]"))});
 
 // Results ---------------------------------------------------------------
-// Renders a DealRecommendation from the DTE-1.0 engine.
+// Renders a DealRecommendation from the DTE-1.1 engine.
 function renderRecommendation(rec,extracted){
   $("results-title").textContent=extracted&&extracted.title?extracted.title:"DealTough recommendation";
   text("deal-score",rec.dealScore+"/100");

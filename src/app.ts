@@ -213,7 +213,7 @@ const publicPath =
 app.use(express.static(publicPath));
 
 app.get("/health", (_req, res) => {
-  res.status(200).json({ ok: true, engineVersion: "DTE-1.0" });
+  res.status(200).json({ ok: true, engineVersion: "DTE-1.1" });
 });
 
 // ── auth ────────────────────────────────────────────────────────────────

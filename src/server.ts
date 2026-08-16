@@ -19,7 +19,7 @@ if (typeof globalThis.crypto?.subtle === "undefined") {
 const port = Number(process.env.PORT) || 4000;
 
 app.listen(port, "0.0.0.0", () => {
-  log.info("server.listening", { port, engineVersion: "DTE-1.0" });
+  log.info("server.listening", { port, engineVersion: "DTE-1.1" });
 });
 
 // Without this, a rejected promise outside a route handler takes the process

@@ -76,7 +76,13 @@ export interface DealRecommendation {
     | "Good Deal"
     | "Fair Deal"
     | "High Risk"
-    | "Walk Away";
+    | "Walk Away"
+    | "Insufficient Data";
+  // "comparables" means fairMarketValue was derived from real comparable
+  // prices. "unknown" means no usable comparables were supplied, so
+  // fairMarketValue (and everything derived from it) is not a valuation --
+  // see the zero-comparable branch of estimateMarketValue in engine.ts.
+  valuationBasis: "comparables" | "unknown";
   fairMarketValue: number;
   goodDealPrice: number;
   greatDealPrice: number;
@@ -93,5 +99,5 @@ export interface DealRecommendation {
   sellerQuestions: string[];
   negotiationMessage: string;
   assumptions: string[];
-  engineVersion: "DTE-1.0";
+  engineVersion: "DTE-1.1";
 }

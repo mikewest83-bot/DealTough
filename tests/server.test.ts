@@ -71,7 +71,7 @@ describe("health", () => {
   it("reports the engine version", async () => {
     const res = await get("/health");
     expect(res.status).toBe(200);
-    await expect(res.json()).resolves.toEqual({ ok: true, engineVersion: "DTE-1.0" });
+    await expect(res.json()).resolves.toEqual({ ok: true, engineVersion: "DTE-1.1" });
   });
 });
 
@@ -122,7 +122,7 @@ describe("POST /api/v1/deals/analyze", () => {
 
     expect(res.status).toBe(200);
     const report = await res.json();
-    expect(report.engineVersion).toBe("DTE-1.0");
+    expect(report.engineVersion).toBe("DTE-1.1");
     expect(report.dealScore).toBeGreaterThan(0);
     expect(report.fairMarketValue).toBeGreaterThan(0);
   });

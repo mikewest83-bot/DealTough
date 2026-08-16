@@ -74,11 +74,19 @@ describe("asking prices are not selling prices", () => {
     expect(none.confidencePercent).toBeGreaterThan(0);
   });
 
-  it("does not adjust when there are no comparables to adjust", () => {
+  it("does not invent a fair market value when there are no comparables to derive one from", () => {
+    // Previously this fell back to fairMarketValue === askingPrice (190),
+    // which made the Value score self-referential and manufactured a
+    // mid-range verdict from zero real data. It should say it doesn't know
+    // instead of quietly reusing the asking price as "the market".
     const none = analyzeDeal({ ...listing, comparables: [] });
 
-    expect(none.fairMarketValue).toBe(190);
+    expect(none.valuationBasis).toBe("unknown");
+    expect(none.fairMarketValue).toBe(0);
+    expect(none.verdict).toBe("Insufficient Data");
+    expect(none.confidencePercent).toBeLessThanOrEqual(35);
     expect(none.assumptions.join(" ")).not.toContain("asking and selling");
+    expect(none.assumptions.join(" ")).toContain("no fair market value could be estimated");
   });
 });
 

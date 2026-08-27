@@ -42,7 +42,9 @@ export function installMarketValueRoute(app: Application): void {
 
     const category = String(req.body?.category || "").trim().toLowerCase();
     const title = String(req.body?.title || "").trim();
-    const askingPrice = Number(req.body?.askingPrice);
+    const rawAskingPrice = req.body?.askingPrice;
+    const hasAskingPrice = rawAskingPrice !== undefined && rawAskingPrice !== null && rawAskingPrice !== "";
+    const askingPrice = hasAskingPrice ? Number(rawAskingPrice) : null;
     const condition = String(req.body?.condition || "unknown").trim().toLowerCase();
     const description = req.body?.description ? String(req.body.description) : undefined;
 
@@ -54,8 +56,8 @@ export function installMarketValueRoute(app: Application): void {
       res.status(400).json({ error: "title_required" });
       return;
     }
-    if (!Number.isFinite(askingPrice) || askingPrice <= 0) {
-      res.status(400).json({ error: "askingPrice must be a positive number." });
+    if (hasAskingPrice && (!Number.isFinite(askingPrice) || askingPrice <= 0)) {
+      res.status(400).json({ error: "askingPrice must be a positive number when supplied." });
       return;
     }
 
@@ -63,14 +65,20 @@ export function installMarketValueRoute(app: Application): void {
       const comparables = await fetchComparables({
         title,
         category: category as DealCategory,
-        askingPrice,
+        askingPrice: askingPrice ?? undefined,
         limit: 50,
       });
 
+      // The deterministic engine requires an asking price, but fair market
+      // value itself comes from the comparable set. When the user is asking
+      // "what is this worth?" rather than "is this listing a good deal?",
+      // use a neutral $1 anchor only for the engine's required input and return
+      // the market-value fields, never the resulting deal score.
+      const engineAskingPrice = askingPrice ?? 1;
       const input: DealInput = {
         category: category as DealCategory,
         title,
-        askingPrice,
+        askingPrice: engineAskingPrice,
         condition: ["new", "like_new", "good", "fair", "poor", "unknown"].includes(condition)
           ? condition as DealInput["condition"]
           : "unknown",
@@ -92,8 +100,6 @@ export function installMarketValueRoute(app: Application): void {
         comparablesUsed: comparables.length,
         soldComparables: comparables.filter((c) => c.sold).length,
         activeComparables: comparables.filter((c) => !c.sold).length,
-        goodDealPrice: recommendation.goodDealPrice,
-        greatDealPrice: recommendation.greatDealPrice,
         assumptions: recommendation.assumptions,
         engineVersion: recommendation.engineVersion,
       });

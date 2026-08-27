@@ -77,8 +77,8 @@ export function installMarketValueRoute(app: Application): void {
         description,
         comparables,
         riskSignals: [],
-        requiredFieldsPresent: [],
-        photoQuality: "unknown",
+        requiredFieldsPresent: 0,
+        photoQuality: 0,
       };
 
       const recommendation = analyzeDeal(input);

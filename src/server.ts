@@ -1,7 +1,10 @@
 // Process entry point. The app itself lives in app.ts so that tests can
 // mount it on an ephemeral port instead of racing for the production one.
 import { app } from "./app.js";
+import { installMarketValueRoute } from "./market-value-route.js";
 import { log } from "./log.js";
+
+installMarketValueRoute(app);
 
 // Sessions are signed by jose, which uses WebCrypto — a global only from Node
 // 19 on. On an older runtime nothing fails at boot; instead every sign-in

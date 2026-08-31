@@ -56,7 +56,7 @@ export function installMarketValueRoute(app: Application): void {
       res.status(400).json({ error: "title_required" });
       return;
     }
-    if (hasAskingPrice && (!Number.isFinite(askingPrice) || askingPrice <= 0)) {
+      if (askingPrice !== null && (!Number.isFinite(askingPrice) || askingPrice <= 0)) {
       res.status(400).json({ error: "askingPrice must be a positive number when supplied." });
       return;
     }

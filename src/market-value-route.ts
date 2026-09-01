@@ -102,6 +102,7 @@ export function installMarketValueRoute(app: Application): void {
       };
 
       const recommendation = analyzeDeal(input);
+      const resaleAvailable = recommendation.valuationBasis === "comparables" && recommendation.fairMarketValue > 0;
       res.status(200).json({
         title,
         category,
@@ -114,6 +115,21 @@ export function installMarketValueRoute(app: Application): void {
         activeComparables: comparables.filter((c) => !c.sold).length,
         assumptions: recommendation.assumptions,
         engineVersion: recommendation.engineVersion,
+        resale: resaleAvailable
+          ? {
+              available: true,
+              expectedResalePrice: recommendation.fairMarketValue,
+              buyTargetPrice: recommendation.greatDealPrice,
+              maxBuyPrice: recommendation.goodDealPrice,
+              basis: "DealTough fair market value from comparable listings; buy targets use the existing DTE-1.1 price ladder.",
+            }
+          : {
+              available: false,
+              expectedResalePrice: null,
+              buyTargetPrice: null,
+              maxBuyPrice: null,
+              basis: "No defensible comparable-based valuation was established.",
+            },
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Market-value lookup failed";

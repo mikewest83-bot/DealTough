@@ -6,19 +6,21 @@ on:
     paths:
       - package.json
       - package-lock.json
+      - Dockerfile
       - .github/workflows/security-dependency-lock.yml
   push:
     branches: [main]
     paths:
       - package.json
       - package-lock.json
+      - Dockerfile
       - .github/workflows/security-dependency-lock.yml
 
 permissions:
   contents: read
 
 jobs:
-  verify-dependencies:
+  verify-dependencies-and-runtime:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,5 +40,15 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Block high or critical dependency advisories
+      - name: Block dependency advisories
         run: npm audit --audit-level=high
+
+      - name: Build production Docker image
+        run: docker build --tag dealtough-runtime-test .
+
+      - name: Verify slim runtime contents
+        run: |
+          docker run --rm dealtough-runtime-test node -e "for (const p of ['vitest','tsx']) { try { require.resolve(p); process.exitCode = 1; console.error(p + ' unexpectedly present'); } catch { console.log(p + ' absent as expected'); } }"
+          docker run --rm dealtough-runtime-test sh -lc 'test -x node_modules/.bin/prisma && test -f dist/src/server.js && test -f prisma/schema.prisma'
+          docker run --rm dealtough-runtime-test node -e "const p=require('./package.json'); if (p.dependencies?.typescript) { console.error('typescript must not be a direct runtime dependency'); process.exit(1); } console.log('typescript is not a direct runtime dependency');"
+          docker run --rm dealtough-runtime-test npm ls typescript --omit=dev

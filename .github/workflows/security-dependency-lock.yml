@@ -23,6 +23,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Use current npm resolver
+        run: npm install --global npm@11.6.0 && npm --version
+
       - name: Regenerate lockfile from scratch
         run: rm -f package-lock.json && npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 

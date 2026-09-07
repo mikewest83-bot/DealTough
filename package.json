@@ -7,8 +7,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "security:audit": "npm audit --json || true",
-    "build": "npm run security:audit && prisma generate && tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "test": "vitest run",
     "dev": "tsx src/server.ts",
     "start": "prisma migrate deploy && node dist/src/server.js"

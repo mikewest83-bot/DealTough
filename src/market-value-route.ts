@@ -1,7 +1,7 @@
 import type { Application, Request, Response } from "express";
 import { analyzeDeal } from "./engine.js";
 import { fetchComparables } from "./ebay.js";
-import type { DealCategory, DealInput } from "./types.js";
+import type { CostItem, DealCategory, DealInput } from "./types.js";
 import { isEbayConfigured } from "./env.js";
 
 const VALID_CATEGORIES: DealCategory[] = [
@@ -12,12 +12,6 @@ const VALID_CATEGORIES: DealCategory[] = [
   "outdoor_equipment",
 ];
 
-// Optional shared secret for the first-party callers (Mike AI today). Left
-// unset the route behaves exactly as it does now, so shipping this cannot
-// break anything on its own - enforcement starts only when the variable is
-// set on both sides. DoerToughMoney is deliberately unaffected: it calls
-// /api/v1/deals/analyze, which stays open because that analysis is free
-// inside DoerToughMoney by design.
 const SERVICE_TOKEN = String(process.env.MARKET_VALUE_TOKEN || "").trim();
 
 const buckets = new Map<string, { count: number; resetAt: number }>();
@@ -40,6 +34,27 @@ function rateLimit(req: Request, res: Response): boolean {
   return true;
 }
 
+function parseHiddenCosts(value: unknown): CostItem[] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 20).flatMap((raw): CostItem[] => {
+    if (!raw || typeof raw !== "object") return [];
+    const item = raw as Record<string, unknown>;
+    const label = String(item.label || "Known cost").trim().slice(0, 120) || "Known cost";
+    const amount = Number(item.amount);
+    if (!Number.isFinite(amount) || amount < 0) return [];
+    const certaintyRaw = item.certainty == null ? undefined : Number(item.certainty);
+    const certainty = certaintyRaw == null || !Number.isFinite(certaintyRaw)
+      ? undefined
+      : Math.max(0, Math.min(1, certaintyRaw));
+    return [{
+      label,
+      amount,
+      ...(certainty !== undefined ? { certainty } : {}),
+      ...(typeof item.required === "boolean" ? { required: item.required } : {}),
+    }];
+  });
+}
+
 export function installMarketValueRoute(app: Application): void {
   app.post("/api/v1/market-value", async (req, res) => {
     if (SERVICE_TOKEN && req.get("x-dealtough-token") !== SERVICE_TOKEN) {
@@ -59,6 +74,10 @@ export function installMarketValueRoute(app: Application): void {
     const askingPrice = hasAskingPrice ? Number(rawAskingPrice) : null;
     const condition = String(req.body?.condition || "unknown").trim().toLowerCase();
     const description = req.body?.description ? String(req.body.description) : undefined;
+    const location = req.body?.location ? String(req.body.location).trim().slice(0, 240) : undefined;
+    const daysListedRaw = req.body?.daysListed;
+    const daysListed = daysListedRaw == null || daysListedRaw === "" ? undefined : Number(daysListedRaw);
+    const hiddenCosts = parseHiddenCosts(req.body?.hiddenCosts);
 
     if (!VALID_CATEGORIES.includes(category as DealCategory)) {
       res.status(400).json({ error: `category must be one of: ${VALID_CATEGORIES.join(", ")}.` });
@@ -72,6 +91,10 @@ export function installMarketValueRoute(app: Application): void {
       res.status(400).json({ error: "askingPrice must be a positive number when supplied." });
       return;
     }
+    if (daysListed !== undefined && (!Number.isFinite(daysListed) || daysListed < 0)) {
+      res.status(400).json({ error: "daysListed must be a non-negative number when supplied." });
+      return;
+    }
 
     try {
       const comparables = await fetchComparables({
@@ -81,11 +104,6 @@ export function installMarketValueRoute(app: Application): void {
         limit: 50,
       });
 
-      // The deterministic engine requires an asking price, but fair market
-      // value itself comes from the comparable set. When the user is asking
-      // "what is this worth?" rather than "is this listing a good deal?",
-      // use a neutral $1 anchor only for the engine's required input and return
-      // the market-value fields, never the resulting deal score.
       const engineAskingPrice = askingPrice ?? 1;
       const input: DealInput = {
         category: category as DealCategory,
@@ -95,6 +113,9 @@ export function installMarketValueRoute(app: Application): void {
           ? condition as DealInput["condition"]
           : "unknown",
         description,
+        location,
+        ...(daysListed !== undefined ? { daysListed } : {}),
+        ...(hiddenCosts.length ? { hiddenCosts } : {}),
         comparables,
         riskSignals: [],
         requiredFieldsPresent: 0,
@@ -105,11 +126,19 @@ export function installMarketValueRoute(app: Application): void {
       const resaleAvailable = recommendation.valuationBasis === "comparables" && recommendation.fairMarketValue > 0;
       const buyTargetPrice = resaleAvailable ? recommendation.greatDealPrice : null;
       const maxBuyPrice = resaleAvailable ? recommendation.goodDealPrice : null;
+      const knownCostTotal = hiddenCosts.reduce((sum, item) => sum + item.amount, 0);
       const grossSpreadAtTarget = resaleAvailable && buyTargetPrice !== null
         ? Math.max(0, recommendation.fairMarketValue - buyTargetPrice)
         : null;
       const grossRoiAtTargetPercent = grossSpreadAtTarget !== null && buyTargetPrice && buyTargetPrice > 0
         ? Math.round((grossSpreadAtTarget / buyTargetPrice) * 100)
+        : null;
+      const netSpreadAtTargetAfterKnownCosts = resaleAvailable && buyTargetPrice !== null
+        ? recommendation.fairMarketValue - buyTargetPrice - knownCostTotal
+        : null;
+      const targetCashInvested = buyTargetPrice !== null ? buyTargetPrice + knownCostTotal : null;
+      const netRoiAtTargetAfterKnownCostsPercent = netSpreadAtTargetAfterKnownCosts !== null && targetCashInvested && targetCashInvested > 0
+        ? Math.round((netSpreadAtTargetAfterKnownCosts / targetCashInvested) * 100)
         : null;
 
       res.status(200).json({
@@ -124,9 +153,8 @@ export function installMarketValueRoute(app: Application): void {
         activeComparables: comparables.filter((c) => !c.sold).length,
         assumptions: recommendation.assumptions,
         engineVersion: recommendation.engineVersion,
-        // When an asking price is known, expose the decision fields the engine
-        // already computed from these same live comparables. This keeps Mike
-        // decision-first without duplicating or inventing valuation logic.
+        knownCosts: hiddenCosts,
+        knownCostTotal,
         decision: askingPrice !== null && recommendation.valuationBasis === "comparables"
           ? {
               dealScore: recommendation.dealScore,
@@ -154,7 +182,12 @@ export function installMarketValueRoute(app: Application): void {
               maxBuyPrice,
               grossSpreadAtTarget,
               grossRoiAtTargetPercent,
-              basis: "DealTough fair market value from comparable listings; buy targets use the existing DTE-1.1 price ladder. Gross spread/ROI exclude repair, transport, tax, platform and selling costs unless those are separately supplied.",
+              knownCostTotal,
+              netSpreadAtTargetAfterKnownCosts,
+              netRoiAtTargetAfterKnownCostsPercent,
+              basis: hiddenCosts.length
+                ? "DealTough fair market value from comparable listings. Net spread/ROI subtract the known costs supplied by the caller; any unknown future costs remain excluded."
+                : "DealTough fair market value from comparable listings; buy targets use the existing DTE-1.1 price ladder. Gross spread/ROI exclude repair, transport, tax, platform and selling costs unless those are supplied.",
             }
           : {
               available: false,
@@ -163,6 +196,9 @@ export function installMarketValueRoute(app: Application): void {
               maxBuyPrice: null,
               grossSpreadAtTarget: null,
               grossRoiAtTargetPercent: null,
+              knownCostTotal,
+              netSpreadAtTargetAfterKnownCosts: null,
+              netRoiAtTargetAfterKnownCostsPercent: null,
               basis: "No defensible comparable-based valuation was established.",
             },
       });

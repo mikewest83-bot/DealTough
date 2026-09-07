@@ -46,6 +46,14 @@ jobs:
       - name: Security audit
         run: npm audit --audit-level=high
 
+      - name: Build production Docker image
+        run: docker build --tag dealtough-runtime-test .
+
+      - name: Verify runtime image excludes dev tools
+        run: |
+          docker run --rm dealtough-runtime-test node -e "for (const p of ['vitest','typescript','tsx']) { try { require.resolve(p); process.exitCode = 1; console.error(p + ' unexpectedly present'); } catch { console.log(p + ' absent as expected'); } }"
+          docker run --rm dealtough-runtime-test sh -lc 'test -x node_modules/.bin/prisma && test -f dist/src/server.js && test -f prisma/schema.prisma'
+
       - name: Commit verified lockfile
         run: |
           if git diff --quiet -- package-lock.json; then

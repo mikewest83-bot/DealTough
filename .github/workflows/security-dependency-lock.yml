@@ -1,4 +1,4 @@
-name: DealTough dependency lock validation
+name: DealTough dependency security
 
 on:
   pull_request:
@@ -7,33 +7,29 @@ on:
       - package.json
       - package-lock.json
       - .github/workflows/security-dependency-lock.yml
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - package-lock.json
+      - .github/workflows/security-dependency-lock.yml
 
 permissions:
-  contents: write
-  pull-requests: read
+  contents: read
 
 jobs:
-  validate-and-export-lock:
+  verify-dependencies:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR branch
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
-      - name: Set up Node
+      - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Use current npm resolver
-        run: npm install --global npm@11.6.0 && npm --version
-
-      - name: Regenerate lockfile from scratch
-        run: rm -f package-lock.json && npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-
-      - name: Clean install
+      - name: Clean install from committed lock
         run: npm ci --no-audit --no-fund
 
       - name: Test
@@ -42,26 +38,5 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Security audit
+      - name: Block high or critical dependency advisories
         run: npm audit --audit-level=high
-
-      - name: Commit verified lockfile
-        run: |
-          if git diff --quiet -- package-lock.json; then
-            echo "package-lock.json already matches the verified dependency graph"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git commit -m "Regenerate security-hardened package lock"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
-
-      - name: Upload regenerated lockfile
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dealtough-security-package-lock
-          path: package-lock.json
-          if-no-files-found: error
-          retention-days: 1

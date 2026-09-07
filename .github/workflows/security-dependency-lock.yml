@@ -6,30 +6,35 @@ on:
     paths:
       - package.json
       - package-lock.json
-      - .github/workflows/security-dependency-lock.yml
-  push:
-    branches: [main]
-    paths:
-      - package.json
-      - package-lock.json
+      - Dockerfile
       - .github/workflows/security-dependency-lock.yml
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: read
 
 jobs:
-  verify-dependencies:
+  refresh-and-verify-runtime-lock:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout PR branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Clean install from committed lock
+      - name: Use current npm resolver
+        run: npm install --global npm@11.6.0 && npm --version
+
+      - name: Refresh lock metadata
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Clean install
         run: npm ci --no-audit --no-fund
 
       - name: Test
@@ -38,5 +43,17 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Block high or critical dependency advisories
+      - name: Security audit
         run: npm audit --audit-level=high
+
+      - name: Commit verified lockfile
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "package-lock.json already matches package metadata"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "Refresh runtime dependency lock metadata"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

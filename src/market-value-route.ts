@@ -103,6 +103,15 @@ export function installMarketValueRoute(app: Application): void {
 
       const recommendation = analyzeDeal(input);
       const resaleAvailable = recommendation.valuationBasis === "comparables" && recommendation.fairMarketValue > 0;
+      const buyTargetPrice = resaleAvailable ? recommendation.greatDealPrice : null;
+      const maxBuyPrice = resaleAvailable ? recommendation.goodDealPrice : null;
+      const grossSpreadAtTarget = resaleAvailable && buyTargetPrice !== null
+        ? Math.max(0, recommendation.fairMarketValue - buyTargetPrice)
+        : null;
+      const grossRoiAtTargetPercent = grossSpreadAtTarget !== null && buyTargetPrice && buyTargetPrice > 0
+        ? Math.round((grossSpreadAtTarget / buyTargetPrice) * 100)
+        : null;
+
       res.status(200).json({
         title,
         category,
@@ -115,19 +124,45 @@ export function installMarketValueRoute(app: Application): void {
         activeComparables: comparables.filter((c) => !c.sold).length,
         assumptions: recommendation.assumptions,
         engineVersion: recommendation.engineVersion,
+        // When an asking price is known, expose the decision fields the engine
+        // already computed from these same live comparables. This keeps Mike
+        // decision-first without duplicating or inventing valuation logic.
+        decision: askingPrice !== null && recommendation.valuationBasis === "comparables"
+          ? {
+              dealScore: recommendation.dealScore,
+              verdict: recommendation.verdict,
+              trueCost: recommendation.trueCost,
+              estimatedSavings: recommendation.estimatedSavings,
+              openingOffer: recommendation.openingOffer,
+              targetPrice: recommendation.targetPrice,
+              walkAwayPrice: recommendation.walkAwayPrice,
+              goodDealPrice: recommendation.goodDealPrice,
+              greatDealPrice: recommendation.greatDealPrice,
+              riskLevel: recommendation.riskLevel,
+              breakdown: recommendation.breakdown,
+              reasons: recommendation.reasons,
+              topRisks: recommendation.topRisks,
+              sellerQuestions: recommendation.sellerQuestions,
+              negotiationMessage: recommendation.negotiationMessage,
+            }
+          : null,
         resale: resaleAvailable
           ? {
               available: true,
               expectedResalePrice: recommendation.fairMarketValue,
-              buyTargetPrice: recommendation.greatDealPrice,
-              maxBuyPrice: recommendation.goodDealPrice,
-              basis: "DealTough fair market value from comparable listings; buy targets use the existing DTE-1.1 price ladder.",
+              buyTargetPrice,
+              maxBuyPrice,
+              grossSpreadAtTarget,
+              grossRoiAtTargetPercent,
+              basis: "DealTough fair market value from comparable listings; buy targets use the existing DTE-1.1 price ladder. Gross spread/ROI exclude repair, transport, tax, platform and selling costs unless those are separately supplied.",
             }
           : {
               available: false,
               expectedResalePrice: null,
               buyTargetPrice: null,
               maxBuyPrice: null,
+              grossSpreadAtTarget: null,
+              grossRoiAtTargetPercent: null,
               basis: "No defensible comparable-based valuation was established.",
             },
       });

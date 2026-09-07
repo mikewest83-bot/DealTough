@@ -22,10 +22,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
 
-      - name: Regenerate lockfile
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Regenerate lockfile from scratch
+        run: rm -f package-lock.json && npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
       - name: Clean install
         run: npm ci --no-audit --no-fund

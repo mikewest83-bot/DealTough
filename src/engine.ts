@@ -426,6 +426,22 @@ function sellerQuestionsFor(input: DealInput): string[] {
       "Can it be started and tested from cold before purchase?",
       "What service, repairs, storage conditions, and replacement parts should I know about?",
     ],
+    musical_instrument: [
+      "Can I play it before buying, and are there cracks, neck or fret problems, or electronics that cut out?",
+      "Is the case, and are the original pickups, tubes, or hardware included and unmodified?",
+    ],
+    sporting_goods: [
+      "What is the model year and size, and has anything been replaced or repaired?",
+      "Is there frame, hull, or shaft damage, and can I inspect the wear points before buying?",
+    ],
+    appliance: [
+      "Can I see it running through a full cycle before purchase?",
+      "How old is it, has it ever been serviced, and are the hoses, racks, trays and manuals included?",
+    ],
+    collectible: [
+      "Has it been professionally graded or authenticated, and can I see the certificate or slab number?",
+      "How has it been stored, and are there any repairs, restorations, reprints or trimming I should know about?",
+    ],
   };
   return [...categoryQuestions[input.category], ...base].slice(0, 5);
 }

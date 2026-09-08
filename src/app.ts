@@ -45,6 +45,10 @@ const VALID_CATEGORIES: DealCategory[] = [
   "tools",
   "furniture",
   "outdoor_equipment",
+  "musical_instrument",
+  "sporting_goods",
+  "appliance",
+  "collectible",
 ];
 
 function isValidCategory(value: unknown): value is DealCategory {
@@ -354,6 +358,12 @@ app.post("/api/billing/checkout", requireAuth, async (req, res) => {
 });
 
 app.post("/api/v1/deals/analyze", (req, res) => {
+  // Without this the engine dereferences CATEGORY_CONFIG[category] on a key
+  // that is not there and the caller gets a raw TypeError message back.
+  if (!isValidCategory(req.body?.category)) {
+    res.status(400).json({ error: `category must be one of: ${VALID_CATEGORIES.join(", ")}.` });
+    return;
+  }
   try {
     const report = analyzeDeal(req.body);
     res.status(200).json(report);

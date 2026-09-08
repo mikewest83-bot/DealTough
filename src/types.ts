@@ -3,7 +3,11 @@ export type DealCategory =
   | "electronics"
   | "tools"
   | "furniture"
-  | "outdoor_equipment";
+  | "outdoor_equipment"
+  | "musical_instrument"
+  | "sporting_goods"
+  | "appliance"
+  | "collectible";
 
 export type Condition =
   | "new"

@@ -10,6 +10,10 @@ const VALID_CATEGORIES: DealCategory[] = [
   "tools",
   "furniture",
   "outdoor_equipment",
+  "musical_instrument",
+  "sporting_goods",
+  "appliance",
+  "collectible",
 ];
 
 const SERVICE_TOKEN = String(process.env.MARKET_VALUE_TOKEN || "").trim();
@@ -18,8 +22,20 @@ const buckets = new Map<string, { count: number; resetAt: number }>();
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 12;
 
-function rateLimit(req: Request, res: Response): boolean {
-  const key = req.ip || "unknown";
+// Every Mike AI user reaches this route from one Railway egress IP, so a purely
+// IP-keyed bucket throttles the whole app the moment two people price items at
+// the same time — a shop working through a counter of goods hits it alone.
+// A caller presenting the shared service token is a known first-party service
+// rather than an anonymous visitor, so it gets its own larger bucket. With no
+// token configured nothing is trusted and the anonymous limit is unchanged.
+const TRUSTED_MAX_REQUESTS = (() => {
+  const configured = Number(process.env.MARKET_VALUE_TRUSTED_RATE_LIMIT);
+  return Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : 60;
+})();
+
+function rateLimit(req: Request, res: Response, trusted: boolean): boolean {
+  const key = trusted ? "trusted:service-token" : `ip:${req.ip || "unknown"}`;
+  const limit = trusted ? TRUSTED_MAX_REQUESTS : MAX_REQUESTS;
   const now = Date.now();
   const bucket = buckets.get(key);
   if (!bucket || bucket.resetAt <= now) {
@@ -27,7 +43,7 @@ function rateLimit(req: Request, res: Response): boolean {
     return true;
   }
   bucket.count += 1;
-  if (bucket.count > MAX_REQUESTS) {
+  if (bucket.count > limit) {
     res.status(429).json({ error: "Too many market-value requests — try again shortly" });
     return false;
   }
@@ -57,11 +73,12 @@ function parseHiddenCosts(value: unknown): CostItem[] {
 
 export function installMarketValueRoute(app: Application): void {
   app.post("/api/v1/market-value", async (req, res) => {
-    if (SERVICE_TOKEN && req.get("x-dealtough-token") !== SERVICE_TOKEN) {
+    const trusted = Boolean(SERVICE_TOKEN) && req.get("x-dealtough-token") === SERVICE_TOKEN;
+    if (SERVICE_TOKEN && !trusted) {
       res.status(401).json({ error: "unauthorized" });
       return;
     }
-    if (!rateLimit(req, res)) return;
+    if (!rateLimit(req, res, trusted)) return;
     if (!isEbayConfigured()) {
       res.status(503).json({ error: "Market-value comparables are not configured" });
       return;

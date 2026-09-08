@@ -45,4 +45,38 @@ export const CATEGORY_CONFIG: Record<DealCategory, {
     defaultHiddenCostRate: 0.06,
     volatilityPenalty: 0.04,
   },
+  // Instruments hold value better than most secondhand goods and cosmetic wear
+  // is expected, so the condition ladder is gentler than tools. The hidden-cost
+  // reserve covers a setup, strings or a case.
+  musical_instrument: {
+    conditionDiscounts: { new: 0, like_new: 0.06, good: 0.14, fair: 0.28, poor: 0.45, unknown: 0.20 },
+    negotiationFloorPercent: 0.72,
+    defaultHiddenCostRate: 0.04,
+    volatilityPenalty: 0.04,
+  },
+  // Bikes, golf clubs and fitness gear depreciate quickly and sell seasonally,
+  // which is what the wider ladder and the volatility penalty are for.
+  sporting_goods: {
+    conditionDiscounts: { new: 0, like_new: 0.10, good: 0.22, fair: 0.38, poor: 0.58, unknown: 0.28 },
+    negotiationFloorPercent: 0.68,
+    defaultHiddenCostRate: 0.05,
+    volatilityPenalty: 0.06,
+  },
+  // Appliances behave like tools on condition but carry real transport and
+  // install cost, and an untested unit is a bigger unknown than an untested drill.
+  appliance: {
+    conditionDiscounts: { new: 0, like_new: 0.10, good: 0.22, fair: 0.40, poor: 0.60, unknown: 0.28 },
+    negotiationFloorPercent: 0.68,
+    defaultHiddenCostRate: 0.07,
+    volatilityPenalty: 0.05,
+  },
+  // On a collectible the condition IS the value - the gap between a clean copy
+  // and a worn one is the whole market - so this is the steepest ladder here,
+  // with the highest volatility penalty because these prices swing hardest.
+  collectible: {
+    conditionDiscounts: { new: 0, like_new: 0.08, good: 0.25, fair: 0.50, poor: 0.72, unknown: 0.35 },
+    negotiationFloorPercent: 0.70,
+    defaultHiddenCostRate: 0.03,
+    volatilityPenalty: 0.10,
+  },
 };

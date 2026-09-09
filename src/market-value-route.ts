@@ -1,7 +1,7 @@
 import type { Application, Request, Response } from "express";
 import { analyzeDeal } from "./engine.js";
 import { fetchComparables } from "./ebay.js";
-import type { CostItem, DealCategory, DealInput } from "./types.js";
+import type { Comparable, CostItem, DealCategory, DealInput } from "./types.js";
 import { isEbayConfigured } from "./env.js";
 
 const VALID_CATEGORIES: DealCategory[] = [
@@ -71,6 +71,73 @@ function parseHiddenCosts(value: unknown): CostItem[] {
   });
 }
 
+// Supported merchandise should not silently terminate at zero comparables just
+// because the first eBay category or exact-title query is too narrow. Keep the
+// existing search untouched as attempt one, then broaden only after it returns
+// nothing. The pricing engine still receives the same Comparable shape and all
+// existing relevance/outlier/condition logic inside fetchComparables remains in
+// force. Firearms and jewelry never reach this route because they are excluded
+// before DealTough is called.
+const SEARCH_NOISE = new Set([
+  "black", "white", "gray", "grey", "silver", "red", "blue", "green", "brown",
+  "new", "used", "vintage", "classic", "premium", "professional", "heavy", "duty",
+]);
+
+function comparableSearchTitles(title: string): string[] {
+  const original = String(title || "").trim().replace(/\s+/g, " ");
+  if (!original) return [];
+  const words = original.split(" ");
+  const cleanedWords = words.filter((word) => !SEARCH_NOISE.has(word.toLowerCase().replace(/[^a-z0-9-]/g, "")));
+  const cleaned = cleanedWords.join(" ").trim();
+
+  // Preserve the front of the title (normally brand/model) and the end (normally
+  // the actual item type) when producing broader fallbacks.
+  const family = words.length > 5
+    ? [...words.slice(0, 3), ...words.slice(-2)].join(" ")
+    : original;
+  const brandAndType = words.length > 3
+    ? [words[0], ...words.slice(-2)].join(" ")
+    : original;
+
+  return [...new Set([original, cleaned, family, brandAndType].filter((value) => value && value.length >= 3))];
+}
+
+async function fetchComparablesWithRecovery(params: {
+  title: string;
+  category: DealCategory;
+  askingPrice?: number;
+  limit?: number;
+}): Promise<{ comparables: Comparable[]; searchTitle: string; searchScope: "category" | "all"; attempts: number }> {
+  const titles = comparableSearchTitles(params.title);
+  let attempts = 0;
+
+  // Attempt one is intentionally identical to the historical behavior.
+  for (const searchTitle of titles) {
+    attempts += 1;
+    const scoped = await fetchComparables({
+      title: searchTitle,
+      category: params.category,
+      askingPrice: params.askingPrice,
+      limit: params.limit,
+    });
+    if (scoped.length) return { comparables: scoped, searchTitle, searchScope: "category", attempts };
+
+    // A valid item can live outside our coarse category map (safes are a good
+    // example). Only after the category-scoped search yields nothing do we let
+    // eBay search all departments; fetchComparables still applies its relevance,
+    // accessory, model-match and outlier protections.
+    attempts += 1;
+    const unscoped = await fetchComparables({
+      title: searchTitle,
+      askingPrice: params.askingPrice,
+      limit: params.limit,
+    });
+    if (unscoped.length) return { comparables: unscoped, searchTitle, searchScope: "all", attempts };
+  }
+
+  return { comparables: [], searchTitle: titles.at(-1) || params.title, searchScope: "all", attempts };
+}
+
 export function installMarketValueRoute(app: Application): void {
   app.post("/api/v1/market-value", async (req, res) => {
     const trusted = Boolean(SERVICE_TOKEN) && req.get("x-dealtough-token") === SERVICE_TOKEN;
@@ -114,12 +181,23 @@ export function installMarketValueRoute(app: Application): void {
     }
 
     try {
-      const comparables = await fetchComparables({
+      const comparableResult = await fetchComparablesWithRecovery({
         title,
         category: category as DealCategory,
         askingPrice: askingPrice ?? undefined,
         limit: 50,
       });
+      const comparables = comparableResult.comparables;
+      if (comparableResult.attempts > 1) {
+        console.info("[market-value] comparable recovery", JSON.stringify({
+          title,
+          category,
+          attempts: comparableResult.attempts,
+          searchTitle: comparableResult.searchTitle,
+          searchScope: comparableResult.searchScope,
+          comparables: comparables.length,
+        }));
+      }
 
       const engineAskingPrice = askingPrice ?? 1;
       const input: DealInput = {
@@ -168,6 +246,11 @@ export function installMarketValueRoute(app: Application): void {
         comparablesUsed: comparables.length,
         soldComparables: comparables.filter((c) => c.sold).length,
         activeComparables: comparables.filter((c) => !c.sold).length,
+        comparableSearch: {
+          attempts: comparableResult.attempts,
+          searchTitle: comparableResult.searchTitle,
+          searchScope: comparableResult.searchScope,
+        },
         assumptions: recommendation.assumptions,
         engineVersion: recommendation.engineVersion,
         knownCosts: hiddenCosts,
@@ -216,7 +299,7 @@ export function installMarketValueRoute(app: Application): void {
               knownCostTotal,
               netSpreadAtTargetAfterKnownCosts: null,
               netRoiAtTargetAfterKnownCostsPercent: null,
-              basis: "No defensible comparable-based valuation was established.",
+              basis: "No defensible comparable-based valuation was established after progressive comparable search.",
             },
       });
     } catch (error) {

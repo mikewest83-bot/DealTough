@@ -115,6 +115,15 @@ setInterval(() => {
 }, 10 * 60 * 1000).unref();
 
 export const app = express();
+
+// Keep a single crawlable public address. Railway serves both the apex and
+// www custom domains, so redirect the duplicate host before application routes.
+app.use((req, res, next) => {
+  if (req.hostname === "www.dealtoughai.com") {
+    return res.redirect(301, `https://dealtoughai.com${req.originalUrl}`);
+  }
+  next();
+});
 app.set("trust proxy", 1); // Railway edge proxy — makes req.ip the real client IP
 
 // One canonical host. The session cookie is host-only (no `domain` set), so

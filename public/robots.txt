@@ -2,3 +2,5 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /d/
+
+Sitemap: https://dealtoughai.com/sitemap.xml

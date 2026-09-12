@@ -119,8 +119,9 @@ export const app = express();
 // Keep a single crawlable public address. Railway serves both the apex and
 // www custom domains, so redirect the duplicate host before application routes.
 app.use((req, res, next) => {
-  if (req.hostname === "www.dealtoughai.com") {
-    return res.redirect(301, `https://dealtoughai.com${req.originalUrl}`);
+  if ((req.method === "GET" || req.method === "HEAD") && req.hostname === "www.dealtoughai.com") {
+    const protocol = req.get("x-forwarded-proto")?.split(",")[0] === "https" ? "https" : req.protocol;
+    return res.redirect(301, `${protocol}://dealtoughai.com${req.originalUrl}`);
   }
   next();
 });

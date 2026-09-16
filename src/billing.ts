@@ -22,6 +22,41 @@ export const FREE_MONTHLY_ALLOWANCE = 2;
 export const PLUS_MONTHLY_ALLOWANCE = 25;
 export const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
+// Tester access. TESTER_EMAILS is a comma or whitespace separated list of
+// addresses that get the Plus allowance without paying for it — for pilots and
+// people trying the product out. Deliberately an allowance and not a bypass:
+// every analysis pulls up to 50 eBay comps against a shared Browse quota, so an
+// address that leaks or is forgotten still has a ceiling. Unset means nobody is
+// a tester, so this is inert until the variable exists and turning it off is a
+// variable change rather than a deploy.
+export const TESTER_MONTHLY_ALLOWANCE =
+  Number(process.env.TESTER_MONTHLY_ALLOWANCE) > 0
+    ? Number(process.env.TESTER_MONTHLY_ALLOWANCE)
+    : PLUS_MONTHLY_ALLOWANCE;
+
+// Read at call time rather than module load so the list can be changed on
+// Railway without a redeploy.
+export function isTesterEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const raw = process.env.TESTER_EMAILS;
+  if (!raw) return false;
+  const target = email.trim().toLowerCase();
+  return raw
+    .split(/[,\s]+/)
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(target);
+}
+
+// Math.max, not a replacement: a tester who also subscribes keeps whatever is
+// larger, so adding someone to the list can never reduce an allowance they are
+// paying for.
+export function effectiveAllowance(user: { email: string; monthlyAllowance: number }): number {
+  return isTesterEmail(user.email)
+    ? Math.max(user.monthlyAllowance, TESTER_MONTHLY_ALLOWANCE)
+    : user.monthlyAllowance;
+}
+
 export const isPlusConfigured = (): boolean => Boolean(process.env.STRIPE_PLUS_PRICE_ID);
 
 let stripeClient: Stripe | null = null;
@@ -260,7 +295,7 @@ export async function consumeAnalysis(userId: string): Promise<AnalysisCharge> {
     const monthlyUsage = expired ? 0 : user.monthlyUsage;
     const monthlyResetAt = expired ? new Date(Date.now() + MONTH_MS) : user.monthlyResetAt;
 
-    if (monthlyUsage < user.monthlyAllowance) {
+    if (monthlyUsage < effectiveAllowance(user)) {
       await tx.user.update({
         where: { id: userId },
         data: { monthlyUsage: monthlyUsage + 1, monthlyResetAt },

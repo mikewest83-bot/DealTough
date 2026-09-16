@@ -27,6 +27,8 @@ import {
   MONTH_MS,
   SIGNUP_BONUS_CREDITS,
   consumeAnalysis,
+  effectiveAllowance,
+  isTesterEmail,
   createCheckoutSession,
   createSubscriptionCheckout,
   deactivatePlus,
@@ -71,12 +73,16 @@ interface AccountUser {
 // next analysis rewrites it.
 function accountSummary(user: AccountUser) {
   const monthlyUsage = user.monthlyResetAt.getTime() <= Date.now() ? 0 : user.monthlyUsage;
+  // Report the allowance the charge path will actually enforce, so a tester is
+  // not told "0 of 2 left" while analyses keep working.
+  const monthlyAllowance = effectiveAllowance(user);
   return {
     email: user.email,
     plan: user.plan,
+    tester: isTesterEmail(user.email),
     monthlyUsage,
-    monthlyAllowance: user.monthlyAllowance,
-    analysesRemaining: Math.max(0, user.monthlyAllowance - monthlyUsage),
+    monthlyAllowance,
+    analysesRemaining: Math.max(0, monthlyAllowance - monthlyUsage),
     creditBalance: user.creditBalance,
     subscriptionStatus: user.subscriptionStatus,
   };

@@ -199,6 +199,15 @@ export function installMarketValueRoute(app: Application): void {
         }));
       }
 
+      const soldComparables = comparables.filter((c) => c.sold).length;
+      const activeComparables = comparables.filter((c) => !c.sold).length;
+      const compBasis = soldComparables > 0 && activeComparables === 0
+        ? "sold"
+        : soldComparables > 0
+          ? "mixed"
+          : activeComparables > 0
+            ? "asking"
+            : "unknown";
       const engineAskingPrice = askingPrice ?? 1;
       const input: DealInput = {
         category: category as DealCategory,
@@ -244,8 +253,9 @@ export function installMarketValueRoute(app: Application): void {
         valuationBasis: recommendation.valuationBasis,
         confidencePercent: recommendation.confidencePercent,
         comparablesUsed: comparables.length,
-        soldComparables: comparables.filter((c) => c.sold).length,
-        activeComparables: comparables.filter((c) => !c.sold).length,
+        soldComparables,
+        activeComparables,
+        compBasis,
         comparableSearch: {
           attempts: comparableResult.attempts,
           searchTitle: comparableResult.searchTitle,

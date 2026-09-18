@@ -451,25 +451,46 @@ export function clearComparableCache(): void {
 
 async function fetchSoldComparables(params: EbaySearchParams): Promise<Comparable[]> {
   const token = await getAppToken(INSIGHTS_SCOPE);
-
-  const url = new URL(INSIGHTS_URL);
-  url.searchParams.set("q", params.title);
-  url.searchParams.set("limit", String(params.limit ?? 50));
   const soldCategory = params.category && CATEGORY_IDS[params.category];
-  if (soldCategory) url.searchParams.set("category_ids", soldCategory);
 
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
-    },
-  });
+  let data: unknown = null;
+  let used = params.title;
+  let attempts = 0;
 
-  if (!res.ok) {
-    throw new Error(`eBay Marketplace Insights request failed: ${res.status}`);
+  // Same ladder as active listings: a full listing title often matches
+  // nothing in completed sales either. Relevance is still judged against
+  // the original title after a broader query returns rows.
+  for (const query of queryLadder(params.title)) {
+    const url = new URL(INSIGHTS_URL);
+    url.searchParams.set("q", query);
+    url.searchParams.set("limit", String(params.limit ?? 50));
+    if (soldCategory) url.searchParams.set("category_ids", soldCategory);
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`eBay Marketplace Insights request failed: ${res.status}`);
+    }
+
+    const body = await res.json();
+    attempts += 1;
+    data = body;
+    used = query;
+
+    const count = (body as { itemSales?: unknown[] })?.itemSales?.length ?? 0;
+    if (count >= ENOUGH_RAW_RESULTS) break;
   }
 
-  return mapItemSalesToComparables(await res.json(), params.title, params.askingPrice);
+  if (attempts > 1) {
+    log.debug("ebay.sold_query_broadened", { title: params.title, used, attempts });
+  }
+
+  return mapItemSalesToComparables(data, params.title, params.askingPrice);
 }
 
 // Browse ANDs every word in the query, so an over-specific title matches

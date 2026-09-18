@@ -535,6 +535,75 @@ describe("mapItemSalesToComparables", () => {
   });
 });
 
+describe("sold-search query ladder", () => {
+  const queries: string[] = [];
+
+  const respondWithSold = (counts: number[]) => {
+    let call = 0;
+    vi.stubGlobal("fetch", async (input: string | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname.includes("oauth2/token")) {
+        return new Response(
+          JSON.stringify({ access_token: "t", expires_in: 7200 }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (!url.pathname.includes("item_sales")) {
+        return new Response(JSON.stringify({ itemSummaries: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      queries.push(url.searchParams.get("q") ?? "");
+      const n = counts[Math.min(call++, counts.length - 1)];
+      return new Response(
+        JSON.stringify({
+          itemSales: Array.from({ length: n }, () => ({
+            title: "2015 Honda Civic EX Sedan",
+            lastSoldPrice: { value: "10500.00" },
+          })),
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    });
+  };
+
+  beforeEach(() => {
+    queries.length = 0;
+    clearComparableCache();
+    process.env.EBAY_MARKETPLACE_INSIGHTS = "1";
+  });
+  afterEach(() => {
+    delete process.env.EBAY_MARKETPLACE_INSIGHTS;
+    vi.unstubAllGlobals();
+  });
+
+  it("shortens the sold query until completed sales come back", async () => {
+    respondWithSold([0, 0, 12]);
+
+    const result = await fetchComparables({
+      title: "2015 Honda Civic EX sedan",
+      category: "vehicle",
+    });
+
+    expect(queries).toEqual([
+      "2015 Honda Civic EX sedan",
+      "2015 Honda Civic EX",
+      "2015 Honda Civic",
+    ]);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every((item) => item.sold)).toBe(true);
+  });
+
+  it("stops the sold ladder once enough completed sales are in hand", async () => {
+    respondWithSold([20]);
+
+    await fetchComparables({ title: "2015 Honda Civic EX sedan", category: "vehicle" });
+
+    expect(queries).toEqual(["2015 Honda Civic EX sedan"]);
+  });
+});
+
 describe("titleSimilarity", () => {
   it("scores an exact match at 1 and an unrelated item near 0", () => {
     expect(titleSimilarity("Sony WH-1000XM5", "Sony WH-1000XM5 Headphones Black")).toBe(1);

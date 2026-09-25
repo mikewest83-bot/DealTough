@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 // these at module load and on every request.
 process.env.JWT_SECRET = "test-only-secret";
 process.env.DATABASE_URL = "postgresql://test/test";
+process.env.MIKE_BRIDGE_TOKEN = "test-mike-bridge-token-32-bytes-minimum";
 
 // A stand-in for Prisma that records what it was asked for. The point of
 // these tests is the authorization boundary — which `where` clause reaches
@@ -72,6 +73,31 @@ describe("health", () => {
     const res = await get("/health");
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ ok: true, engineVersion: "DTE-1.1" });
+  });
+});
+
+describe("Mike AI bridge", () => {
+  it("rejects requests without the service token", async () => {
+    const res = await get("/api/mike-bridge/v1/status");
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects an incorrect service token", async () => {
+    const res = await fetch(`${baseUrl}/api/mike-bridge/v1/status`, {
+      headers: { authorization: "Bearer wrong-token" },
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("returns an allowlisted operational snapshot to Mike AI", async () => {
+    const res = await fetch(`${baseUrl}/api/mike-bridge/v1/status`, {
+      headers: { authorization: `Bearer ${process.env.MIKE_BRIDGE_TOKEN}` },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    const body = await res.json();
+    expect(body).toMatchObject({ schemaVersion: 1, service: "dealtough", ok: true });
+    expect(JSON.stringify(body)).not.toContain(process.env.MIKE_BRIDGE_TOKEN);
   });
 });
 

@@ -40,6 +40,7 @@ import {
   suspendForFailedPayment,
   verifyWebhookEvent,
 } from "./billing.js";
+import { dealToughBridgeStatus, requireMikeBridge } from "./mike-bridge.js";
 
 const VALID_CATEGORIES: DealCategory[] = [
   "vehicle",
@@ -235,6 +236,20 @@ app.use(express.static(publicPath));
 app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true, engineVersion: "DTE-1.1" });
 });
+
+// Private, read-only service-to-service status for Mike AI. This deliberately
+// reports capability flags only; credentials, customer data, and deal content
+// never cross the bridge.
+app.get(
+  "/api/mike-bridge/v1/status",
+  rateLimit("mike-bridge", 60, 60_000),
+  requireMikeBridge,
+  (_req, res) => {
+    res.set("Cache-Control", "private, no-store");
+    res.set("Vary", "Authorization");
+    res.status(200).json(dealToughBridgeStatus());
+  },
+);
 
 // ── auth ────────────────────────────────────────────────────────────────
 app.post("/api/auth/register", async (req, res) => {

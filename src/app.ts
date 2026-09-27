@@ -41,6 +41,7 @@ import {
   verifyWebhookEvent,
 } from "./billing.js";
 import { dealToughBridgeStatus, requireMikeBridge } from "./mike-bridge.js";
+import { estimateLandscaping } from "./landscaping.js";
 
 const VALID_CATEGORIES: DealCategory[] = [
   "vehicle",
@@ -248,6 +249,21 @@ app.get(
     res.set("Cache-Control", "private, no-store");
     res.set("Vary", "Authorization");
     res.status(200).json(dealToughBridgeStatus());
+  },
+);
+
+// Landscaping project pricing is separate from used-item Deal Scores. It is
+// deterministic, consumes no analysis credit, and never calls eBay or an LLM.
+app.post(
+  "/api/v1/projects/landscaping/estimate",
+  rateLimit("landscaping-estimate", 30, 60_000),
+  (req, res) => {
+    try {
+      res.status(200).json(estimateLandscaping(req.body));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid landscaping estimate request";
+      res.status(400).json({ error: message });
+    }
   },
 );
 

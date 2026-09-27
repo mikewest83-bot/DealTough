@@ -40,6 +40,7 @@ export function dealToughBridgeStatus() {
     uptimeSeconds: Math.round(process.uptime()),
     capabilities: {
       dealAnalysis: true,
+      landscapingEstimates: true,
       aiExtraction: isAnthropicConfigured(),
       marketComparables: isEbayConfigured(),
       accounts: isAuthConfigured() && isDbConfigured(),

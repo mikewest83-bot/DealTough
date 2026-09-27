@@ -176,6 +176,34 @@ describe("POST /api/v1/deals/analyze", () => {
   });
 });
 
+describe("POST /api/v1/projects/landscaping/estimate", () => {
+  it("returns a public landscaping estimate without consuming a deal credit", async () => {
+    const res = await post("/api/v1/projects/landscaping/estimate", {
+      projectType: "mulch",
+      areaSqFt: 1000,
+      depthIn: 3,
+    });
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      calculation: "landscaping_estimate",
+      projectType: "mulch",
+      quantity: { cubicYardsToOrder: 10.5 },
+    });
+  });
+
+  it("returns a useful 400 for missing measurements", async () => {
+    const res = await post("/api/v1/projects/landscaping/estimate", {
+      projectType: "sod",
+    });
+
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toMatchObject({
+      error: expect.stringMatching(/areaSqFt/),
+    });
+  });
+});
+
 describe("history routes require a session", () => {
   it("rejects an anonymous list request", async () => {
     const res = await get("/api/v1/deals");

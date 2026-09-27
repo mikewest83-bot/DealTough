@@ -46,7 +46,7 @@ h1{margin:0;max-width:760px;font-size:clamp(3rem,7vw,5.8rem);line-height:.97;let
 .share-row{display:none;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:24px}.share-row.visible{display:flex}.share-row .btn{min-height:42px;padding:8px 14px;font-size:.86rem}.share-note{color:#6f7f96;font-size:.8rem}.shared-banner{display:none;margin-bottom:22px;padding:14px 16px;border:1px solid rgba(249,115,22,.25);border-radius:14px;background:rgba(249,115,22,.08);color:#fdba74;font-size:.88rem;line-height:1.55}.shared-banner.visible{display:block}
 .negotiation{margin-top:18px;padding:26px;border-radius:20px}.negotiation-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:18px;margin-bottom:15px}.negotiation-head h3{margin:0}.script{padding:18px;border-radius:14px;color:#d8e0ea;background:#091421;line-height:1.65;white-space:pre-wrap}
 .price-card{display:flex;flex-direction:column;padding:26px;border-radius:20px}.price-card.featured{border-color:rgba(249,115,22,.55);transform:translateY(-8px)}.price{margin:8px 0 18px;font-size:2.35rem;font-weight:950}.price small{color:var(--muted);font-size:.82rem}.price-card ul{padding:0;margin:0 0 24px;list-style:none}.price-card li{margin:11px 0;padding-left:22px;color:#dce4ee}.price-card li:before{content:"\2713";margin-left:-22px;margin-right:9px;color:#86efac}.price-card .btn{margin-top:auto;width:100%;min-height:50px}
-.modal-backdrop{position:fixed;inset:0;z-index:100;display:none;place-items:center;padding:18px;background:rgba(2,8,18,.78);backdrop-filter:blur(8px)}.modal-backdrop.visible{display:grid}.modal{width:min(460px,100%);padding:26px;border:1px solid var(--border);border-radius:22px;background:#101b2c;box-shadow:var(--shadow)}.modal-head{display:flex;justify-content:space-between;gap:16px;margin-bottom:22px}.modal-head h2{margin:0 0 5px}.modal-head p{margin:0;color:var(--muted);font-size:.9rem}.close-btn{width:38px;height:38px;padding:0;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.03);color:var(--text);font-size:1.3rem}.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;padding:5px;border:1px solid var(--border);border-radius:13px;background:#0b1626}.auth-tab{min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-weight:850}.auth-tab.active{background:var(--surface2);color:var(--text)}.auth-panel{display:none}.auth-panel.active{display:block}
+.modal-backdrop{position:fixed;inset:0;z-index:100;display:none;place-items:center;padding:18px;background:rgba(2,8,18,.78);backdrop-filter:blur(8px)}.modal-backdrop.visible{display:grid}.modal{width:min(460px,100%);padding:26px;border:1px solid var(--border);border-radius:22px;background:#101b2c;box-shadow:var(--shadow)}.modal-head{display:flex;justify-content:space-between;gap:16px;margin-bottom:22px}.modal-head h2{margin:0 0 5px}.modal-head p{margin:0;color:var(--muted);font-size:.9rem}.close-btn{width:38px;height:38px;padding:0;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.03);color:var(--text);font-size:1.3rem}.auth-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;padding:5px;border:1px solid var(--border);border-radius:13px;background:#0b1626}.auth-tab{min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-weight:850}.auth-tab.active{background:var(--surface2);color:var(--text)}.auth-panel{display:none}.auth-panel.active{display:block}.landscape-result{display:none;margin-top:20px;padding:18px;border:1px solid rgba(255,122,26,.35);border-radius:14px;background:rgba(255,122,26,.06)}.landscape-result.visible{display:block}.landscape-result h3{margin:0 0 8px}.landscape-result strong{font-size:1.5rem;color:var(--orange)}.landscape-result p{margin:9px 0;color:var(--muted);line-height:1.55}.landscape-result b{color:var(--text)}
 footer{margin-top:40px;padding:30px 0 42px;border-top:1px solid var(--border);color:#748299;text-align:center;font-size:.82rem}footer a{color:#9eabc0;text-decoration:none}footer a:hover{color:var(--orange)}
 @media(max-width:920px){.hero{grid-template-columns:1fr;padding-top:52px}.grid3,.pricing{grid-template-columns:1fr}.price-card.featured{transform:none}.results-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.page-shell{width:min(100% - 22px,1160px)}.header-actions .btn.primary{display:none}.account-label{max-width:105px}.hero{gap:30px;padding:38px 0 28px}h1{font-size:clamp(2.65rem,15vw,4.4rem)}.card{padding:21px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.results-grid{grid-template-columns:1fr}.wide{grid-column:auto}.section{padding:44px 0}}
 </style>
@@ -56,12 +56,29 @@ footer{margin-top:40px;padding:30px 0 42px;border-top:1px solid var(--border);co
 <main>
 <section class="page-shell hero">
 <div><div class="eyebrow">Buy smarter. Negotiate tougher.</div><h1>Know the deal <span class="highlight">before it costs you.</span></h1><p class="hero-copy">Paste a listing. Get a deal score, a fair price, and a walk-away number before you pay.</p><div class="trust-row"><span class="trust-chip">No credit card</span><span class="trust-chip">Live comps</span><span class="trust-chip">Opening offer</span><span class="trust-chip">Walk-away price</span></div></div>
-<section class="card"><div class="plan-strip"><div><strong id="plan-name">Start free</strong><span id="plan-message">4 listing analyses — no credit card</span></div><button class="btn primary" id="plan-upgrade" type="button">Create free account</button></div><h2>Analyze a listing</h2><p class="card-copy">Paste the listing and DealTough reads it for you &mdash; or enter the numbers yourself.</p>
-<div class="auth-tabs"><button class="auth-tab active" id="paste-tab" type="button">Paste Listing</button><button class="auth-tab" id="manual-tab" type="button">Manual Entry</button></div>
+<section class="card"><div class="plan-strip"><div><strong id="plan-name">Start free</strong><span id="plan-message">4 listing analyses — no credit card</span></div><button class="btn primary" id="plan-upgrade" type="button">Create free account</button></div><h2>Analyze a deal or project</h2><p class="card-copy">Paste a listing, enter deal numbers, or price a landscaping project.</p>
+<div class="auth-tabs"><button class="auth-tab active" id="paste-tab" type="button">Paste Listing</button><button class="auth-tab" id="manual-tab" type="button">Manual Entry</button><button class="auth-tab" id="landscape-tab" type="button">Landscaping</button></div>
 
 <form class="auth-panel active" id="paste-form"><div class="form-grid"><div class="field full"><label for="listing-text">Listing text</label><textarea id="listing-text" placeholder="Paste the full listing here &mdash; title, price, description, seller notes, anything the seller wrote." required></textarea></div><div class="field"><label for="paste-category">Category</label><select id="paste-category"><option value="">Auto-detect</option><option value="vehicle">Vehicle</option><option value="electronics">Electronics</option><option value="tools">Tools</option><option value="furniture">Furniture</option><option value="outdoor_equipment">Outdoor equipment</option></select></div><div class="field"><label for="listing-photos">Photos (optional)</label><div class="upload"><input id="listing-photos" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple></div></div></div><button class="submit" type="submit">Analyze This Deal</button><p class="note">Photos are read for condition and scam signals. Up to 4, 5&nbsp;MB each.</p><div id="paste-status" class="status" role="status"></div></form>
 
 <form class="auth-panel" id="manual-form"><div class="form-grid"><div class="field"><label for="asking-price">Asking price</label><input id="asking-price" type="number" min="1" step="1" placeholder="5000" required></div><div class="field"><label for="estimated-market-value">Estimated market value</label><input id="estimated-market-value" type="number" min="1" step="1" placeholder="6200" required></div><div class="field"><label for="manual-category">Category</label><select id="manual-category"><option value="vehicle">Vehicle</option><option value="electronics">Electronics</option><option value="tools">Tools</option><option value="furniture">Furniture</option><option value="outdoor_equipment">Outdoor equipment</option></select></div><div class="field"><label for="manual-condition">Condition</label><select id="manual-condition"><option value="unknown">Unknown</option><option value="new">New</option><option value="like_new">Like new</option><option value="good">Good</option><option value="fair">Fair</option><option value="poor">Poor</option></select></div><div class="field full"><label for="deal-title">Deal title</label><input id="deal-title" type="text" placeholder="2019 Ford F-150"></div></div><button class="submit" type="submit">Score These Numbers</button><p class="note">Manual scoring is free and unlimited &mdash; it does not use an analysis credit.</p><div id="manual-status" class="status" role="status"></div></form>
+
+<form class="auth-panel" id="landscape-form">
+  <div class="form-grid">
+    <div class="field"><label for="landscape-project-type">Project type</label><select id="landscape-project-type"><option value="mulch">Mulch</option><option value="pine_straw">Pine straw</option><option value="sod">Sod installation</option><option value="pavers">Pavers</option><option value="planting">Planting</option><option value="cleanup">Cleanup &amp; haul-off</option><option value="irrigation">Irrigation</option><option value="lawn_service">Lawn service</option></select></div>
+    <div class="field"><label for="landscape-area">Area (sq ft)</label><input id="landscape-area" type="number" min="0" step="1" placeholder="1000"></div>
+    <div class="field"><label for="landscape-length">Length (ft, optional)</label><input id="landscape-length" type="number" min="0" step="0.1" placeholder="50"></div>
+    <div class="field"><label for="landscape-width">Width (ft, optional)</label><input id="landscape-width" type="number" min="0" step="0.1" placeholder="20"></div>
+    <div class="field" id="landscape-depth-field"><label for="landscape-depth">Depth (inches)</label><input id="landscape-depth" type="number" min="0" step="0.5" placeholder="3"></div>
+    <div class="field"><label id="landscape-quantity-label" for="landscape-quantity">Optional quantity</label><input id="landscape-quantity" type="number" min="0" step="0.1" placeholder="Leave blank if not needed"></div>
+    <div class="field" id="landscape-plant-size-field" style="display:none"><label for="landscape-plant-size">Plant size</label><select id="landscape-plant-size"><option value="small">Small (1–3 gallon)</option><option value="medium" selected>Medium (5–7 gallon)</option><option value="large">Large shrub / small tree</option></select></div>
+    <div class="field" id="landscape-disposal-field" style="display:none"><label for="landscape-disposal-loads">Disposal loads</label><input id="landscape-disposal-loads" type="number" min="0" step="1" value="1"></div>
+  </div>
+  <button class="submit" type="submit">Estimate Landscaping Project</button>
+  <p class="note">Free project estimate. Use area or length × width. Fill the quantity field only when the selected project asks for it.</p>
+  <div id="landscape-status" class="status" role="status"></div>
+  <div id="landscape-result" class="landscape-result" aria-live="polite"><h3>Planning range</h3><strong id="landscape-range">&mdash;</strong><p id="landscape-takeoff"></p><p><b>Assumptions:</b> <span id="landscape-assumptions"></span></p><p><b>Not included:</b> <span id="landscape-exclusions"></span></p></div>
+</form>
 </section>
 </section>
 <section class="page-shell section"><p class="kicker">Built to protect buyers</p><h2 class="section-title">More than a price checker.</h2><p class="section-copy">DealTough helps you avoid bad purchases, uncover the real cost, and negotiate from a position of confidence.</p><div class="grid3"><article class="feature"><b>Fair value analysis</b><p>Live comparable listings set the market value, then the engine scores the asking price against it.</p></article><article class="feature"><b>Risk and cost protection</b><p>Surface warning signs, hidden costs, repairs, fees, and reasons to slow down.</p></article><article class="feature"><b>Negotiation leverage</b><p>Get an opening offer, walk-away price, seller questions, and a ready-to-send message.</p></article></div></section>
@@ -80,8 +97,8 @@ const $=id=>document.getElementById(id);
 const results=$("results"),copyBtn=$("copy-btn"),shareBtn=$("share-btn");
 const modal=$("auth-modal"),authButton=$("auth-button"),accountLabel=$("account-label"),planName=$("plan-name"),planMessage=$("plan-message"),planUpgrade=$("plan-upgrade");
 const loginTab=$("login-tab"),registerTab=$("register-tab"),loginForm=$("login-form"),registerForm=$("register-form");
-const pasteTab=$("paste-tab"),manualTab=$("manual-tab"),pasteForm=$("paste-form"),manualForm=$("manual-form");
-const pasteStatus=$("paste-status"),manualStatus=$("manual-status");
+const pasteTab=$("paste-tab"),manualTab=$("manual-tab"),landscapeTab=$("landscape-tab"),pasteForm=$("paste-form"),manualForm=$("manual-form"),landscapeForm=$("landscape-form");
+const pasteStatus=$("paste-status"),manualStatus=$("manual-status"),landscapeStatus=$("landscape-status");
 const plusCheckoutButton=$("plus-checkout-button"),creditCheckoutButton=$("credit-checkout-button");
 const JSON_HEADERS={"Content-Type":"application/json"};
 const MAX_PHOTOS=4,MAX_PHOTO_BYTES=5*1024*1024;
@@ -301,12 +318,13 @@ async function loadSharedReport(shareId){
 
 // Analyze: paste listing (AI pipeline) -----------------------------------
 function switchMode(mode){
-  const paste=mode==="paste";
-  pasteTab.classList.toggle("active",paste);manualTab.classList.toggle("active",!paste);
-  pasteForm.classList.toggle("active",paste);manualForm.classList.toggle("active",!paste);
+  const paste=mode==="paste",manual=mode==="manual",landscape=mode==="landscape";
+  pasteTab.classList.toggle("active",paste);manualTab.classList.toggle("active",manual);landscapeTab.classList.toggle("active",landscape);
+  pasteForm.classList.toggle("active",paste);manualForm.classList.toggle("active",manual);landscapeForm.classList.toggle("active",landscape);
 }
 pasteTab.addEventListener("click",()=>switchMode("paste"));
 manualTab.addEventListener("click",()=>switchMode("manual"));
+landscapeTab.addEventListener("click",()=>switchMode("landscape"));
 
 function readPhoto(file){
   return new Promise((resolve,reject)=>{
@@ -383,6 +401,52 @@ manualForm.addEventListener("submit",async e=>{
     renderRecommendation(data,{title:body.title});
     setStatus(manualStatus,"Your DealTough analysis is ready.","success");
   }catch(err){setStatus(manualStatus,err instanceof Error?err.message:"Something went wrong. Please try again.","error")}
+  finally{button.disabled=false;button.textContent=original}
+});
+
+// Landscaping project pricing (free, no credit) --------------------------
+function landscapeNumber(id){
+  const raw=$(id).value,n=Number(raw);
+  return raw!==""&&Number.isFinite(n)&&n>=0?n:undefined;
+}
+function updateLandscapeFields(){
+  const type=$("landscape-project-type").value;
+  const labels={planting:"Plant count",cleanup:"Crew hours",irrigation:"Irrigation zones",lawn_service:"Number of visits"};
+  $("landscape-quantity-label").textContent=labels[type]||"Optional quantity";
+  $("landscape-depth-field").style.display=type==="mulch"?"":"none";
+  $("landscape-plant-size-field").style.display=type==="planting"?"":"none";
+  $("landscape-disposal-field").style.display=type==="cleanup"?"":"none";
+}
+$("landscape-project-type").addEventListener("change",updateLandscapeFields);
+updateLandscapeFields();
+
+landscapeForm.addEventListener("submit",async e=>{
+  e.preventDefault();clearStatus(landscapeStatus);$("landscape-result").classList.remove("visible");
+  const projectType=$("landscape-project-type").value;
+  const body={projectType:projectType};
+  const area=landscapeNumber("landscape-area"),length=landscapeNumber("landscape-length"),width=landscapeNumber("landscape-width"),depth=landscapeNumber("landscape-depth"),quantity=landscapeNumber("landscape-quantity");
+  if(area!==undefined)body.areaSqFt=area;
+  if(length!==undefined)body.lengthFt=length;
+  if(width!==undefined)body.widthFt=width;
+  if(projectType==="mulch"&&depth!==undefined)body.depthIn=depth;
+  if(projectType==="planting"){if(quantity!==undefined)body.plantCount=quantity;body.plantSize=$("landscape-plant-size").value}
+  if(projectType==="cleanup"){if(quantity!==undefined)body.crewHours=quantity;const loads=landscapeNumber("landscape-disposal-loads");if(loads!==undefined)body.disposalLoads=loads}
+  if(projectType==="irrigation"&&quantity!==undefined)body.zones=quantity;
+  if(projectType==="lawn_service"&&quantity!==undefined)body.visits=quantity;
+  const button=landscapeForm.querySelector("button[type=submit]"),original=button.textContent;
+  try{
+    button.disabled=true;button.textContent="Estimating...";
+    const r=await fetch("/api/v1/projects/landscaping/estimate",{method:"POST",headers:JSON_HEADERS,credentials:"same-origin",body:JSON.stringify(body)});
+    const c=r.headers.get("content-type")||"",data=c.includes("application/json")?await r.json():{error:await r.text()};
+    if(!r.ok)throw new Error(data.error||"Unable to estimate this project.");
+    $("landscape-range").textContent=money(data.installedRange.low)+" – "+money(data.installedRange.high);
+    const rows=Array.isArray(data.materialTakeoff)?data.materialTakeoff:[];
+    $("landscape-takeoff").textContent=rows.length?rows.map(row=>row.label+": "+row.qty+" "+row.unit+" ("+money(row.low)+" – "+money(row.high)+")").join(" • "):"Installed project pricing; no separate material takeoff for this category.";
+    $("landscape-assumptions").textContent=list(data.assumptions);
+    $("landscape-exclusions").textContent=list(data.notIncluded);
+    $("landscape-result").classList.add("visible");
+    setStatus(landscapeStatus,"Planning estimate ready. Confirm site conditions and supplier pricing before sending a firm quote.","success");
+  }catch(err){setStatus(landscapeStatus,err instanceof Error?err.message:"Something went wrong. Please try again.","error")}
   finally{button.disabled=false;button.textContent=original}
 });
 

@@ -10,6 +10,7 @@ import type { Comparable, DealCategory, DealInput } from "./types.js";
 import { isAnthropicConfigured, isAuthConfigured, isDbConfigured, isEbayConfigured, isStripeConfigured } from "./env.js";
 import { extractListingFields, type ExtractPhoto } from "./extract.js";
 import { fetchComparables } from "./ebay.js";
+import { decodeVin, fetchVinAuditValue, findMileage, findVin, vehicleSearchTitle, vinAuditComparables, VINAUDIT_MIN_COUNT } from "./vehicle.js";
 import { getPrisma } from "./db.js";
 import { log } from "./log.js";
 import {
@@ -509,10 +510,36 @@ app.post("/api/v1/deals/from-listing", requireAuth, rateLimit("analyze", 6, 60_0
 
   let comparables: Comparable[] = [];
   let comparablesSource = "none";
-  if (isEbayConfigured()) {
+
+  // Vehicles: a VIN in the listing pins the exact vehicle (free NHTSA decode),
+  // and, when VINAUDIT_API_KEY is set, a VIN-exact market value replaces the
+  // sparse eBay vehicle comparables. Both are best-effort and never block.
+  let searchTitle = extracted.title;
+  let vehicleNote: string | null = null;
+  if (category === "vehicle") {
+    const vin = findVin(rawText);
+    if (vin) {
+      const decoded = await decodeVin(vin);
+      if (decoded) {
+        searchTitle = vehicleSearchTitle(decoded);
+        vehicleNote = `VIN decoded: ${searchTitle}`;
+      }
+      const value = await fetchVinAuditValue(vin, findMileage(rawText));
+      if (value && value.count >= VINAUDIT_MIN_COUNT) {
+        comparables = vinAuditComparables(value);
+        comparablesSource = "vinaudit";
+        vehicleNote = `Market value from ${value.count} dealer listings for this exact VIN${value.mileage ? ` at ${value.mileage.toLocaleString("en-US")} miles` : ""}`;
+      }
+    }
+  }
+  if (vehicleNote) warnings.push(vehicleNote);
+
+  if (comparablesSource === "vinaudit") {
+    // Already valued from the VIN; skip the eBay lookup.
+  } else if (isEbayConfigured()) {
     try {
       comparables = await fetchComparables({
-        title: extracted.title,
+        title: searchTitle,
         category,
         // Lets the lookup discard parts and accessories, which are priced far
         // below the item they belong to and otherwise dominate the median.

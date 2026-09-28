@@ -47,7 +47,7 @@ h1{margin:0;max-width:760px;font-size:clamp(3rem,7vw,5.8rem);line-height:.97;let
 .negotiation{margin-top:18px;padding:26px;border-radius:20px}.negotiation-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:18px;margin-bottom:15px}.negotiation-head h3{margin:0}.script{padding:18px;border-radius:14px;color:#d8e0ea;background:#091421;line-height:1.65;white-space:pre-wrap}
 .price-card{display:flex;flex-direction:column;padding:26px;border-radius:20px}.price-card.featured{border-color:rgba(95,179,131,.55);transform:translateY(-8px)}.price{margin:8px 0 18px;font-size:2.35rem;font-weight:950}.price small{color:var(--muted);font-size:.82rem}.price-card ul{padding:0;margin:0 0 24px;list-style:none}.price-card li{margin:11px 0;padding-left:22px;color:#dce4ee}.price-card li:before{content:"\2713";margin-left:-22px;margin-right:9px;color:#86efac}.price-card .btn{margin-top:auto;width:100%;min-height:50px}
 .modal-backdrop{position:fixed;inset:0;z-index:100;display:none;place-items:center;padding:18px;background:rgba(2,8,18,.78);backdrop-filter:blur(8px)}.modal-backdrop.visible{display:grid}.modal{width:min(460px,100%);padding:26px;border:1px solid var(--border);border-radius:22px;background:#101b2c;box-shadow:var(--shadow)}.modal-head{display:flex;justify-content:space-between;gap:16px;margin-bottom:22px}.modal-head h2{margin:0 0 5px}.modal-head p{margin:0;color:var(--muted);font-size:.9rem}.close-btn{width:38px;height:38px;padding:0;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.03);color:var(--text);font-size:1.3rem}.auth-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;padding:5px;border:1px solid var(--border);border-radius:13px;background:#0b1626}.auth-tab{min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-weight:850}.auth-tab.active{background:var(--surface2);color:var(--text)}.auth-panel{display:none}.auth-panel.active{display:block}
-footer{margin-top:40px;padding:30px 0 42px;border-top:1px solid var(--border);color:#748299;text-align:center;font-size:.82rem}footer a{color:#9eabc0;text-decoration:none}footer a:hover{color:var(--green-text)}.footer-links{margin-bottom:10px;line-height:1.9}.footer-links a{color:var(--muted)}
+footer{margin-top:40px;padding:30px 0 42px;border-top:1px solid var(--border);color:#748299;text-align:center;font-size:.82rem}footer a{color:#9eabc0;text-decoration:none}footer a:hover{color:var(--green-text)}.footer-links{margin-bottom:10px;line-height:1.9}.sell-result{display:none;margin-top:20px}.sell-result.visible{display:block}.sell-prices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sell-price{padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03)}.sell-price span{display:block;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}.sell-price strong{display:block;margin-top:4px;font-size:1.25rem}.sell-price.list strong{color:var(--green-text)}.sell-price small{display:block;margin-top:3px;color:var(--muted);font-size:.7rem}.sell-basis{margin:8px 0 0;color:var(--muted);font-size:.8rem;line-height:1.5}.sell-block{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}.sell-block p,.sell-block li{color:var(--muted);font-size:.9rem;line-height:1.55}.sell-block ul{margin:6px 0 0;padding-left:18px}.sell-block-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.sell-block .btn.sell-copy,.sell-reply-out .btn{width:auto;min-height:34px;margin:0;padding:6px 12px;font-size:.8rem}.sell-desc{white-space:pre-wrap}.sell-copy-all{width:100%;margin-top:14px}.sell-hint{margin:4px 0 8px;color:var(--muted);font-size:.8rem}.sell-reply textarea{width:100%;box-sizing:border-box;margin-bottom:8px}.sell-reply>.btn{width:100%}.sell-reply-out{display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:12px}.sell-reply-out.visible{display:block}.sell-reply-out p:first-child{color:var(--text)}@media(max-width:620px){.sell-prices{grid-template-columns:1fr}}.footer-links a{color:var(--muted)}
 @media(max-width:920px){.hero{grid-template-columns:1fr;padding-top:52px}.grid3,.pricing{grid-template-columns:1fr}.price-card.featured{transform:none}.results-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.page-shell{width:min(100% - 22px,1160px)}.header-actions{gap:8px}.header-actions .btn{padding:9px 12px;font-size:.84rem}.brand span:last-child{font-size:1rem}.account-label{max-width:105px}.hero{gap:30px;padding:38px 0 28px}h1{font-size:clamp(2.65rem,15vw,4.4rem)}.card{padding:21px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.results-grid{grid-template-columns:1fr}.wide{grid-column:auto}.section{padding:44px 0}}
 </style>
 </head>
@@ -56,12 +56,39 @@ footer{margin-top:40px;padding:30px 0 42px;border-top:1px solid var(--border);co
 <main>
 <section class="page-shell hero">
 <div><div class="eyebrow">Buy smarter. Negotiate tougher.</div><h1>Know the deal <span class="highlight">before it costs you.</span></h1><p class="hero-copy">Paste a listing. Get a deal score, a fair price, and a walk-away number before you pay.</p><div class="trust-row"><span class="trust-chip">No credit card</span><span class="trust-chip">Live comps</span><span class="trust-chip">Opening offer</span><span class="trust-chip">Walk-away price</span></div></div>
-<section class="card"><div class="plan-strip"><div><strong id="plan-name">Start free</strong><span id="plan-message">4 listing analyses — no credit card</span></div><button class="btn primary" id="plan-upgrade" type="button">Create free account</button></div><h2>Analyze a deal</h2><p class="card-copy">Paste a listing or enter the deal numbers yourself.</p>
-<div class="auth-tabs"><button class="auth-tab active" id="paste-tab" type="button">Paste Listing</button><button class="auth-tab" id="manual-tab" type="button">Manual Entry</button></div>
+<section class="card"><div class="plan-strip"><div><strong id="plan-name">Start free</strong><span id="plan-message">4 listing analyses — no credit card</span></div><button class="btn primary" id="plan-upgrade" type="button">Create free account</button></div><h2 id="card-title">Analyze a deal</h2><p class="card-copy" id="card-copy">Paste a listing or enter the deal numbers yourself. Selling? Use Sell Something.</p>
+<div class="auth-tabs"><button class="auth-tab active" id="paste-tab" type="button">Paste Listing</button><button class="auth-tab" id="manual-tab" type="button">Manual Entry</button><button class="auth-tab" id="sell-tab" type="button">Sell Something</button></div>
 
 <form class="auth-panel active" id="paste-form"><div class="form-grid"><div class="field full"><label for="listing-text">Listing text</label><textarea id="listing-text" placeholder="Paste the full listing here &mdash; title, price, description, seller notes, anything the seller wrote." required></textarea></div><div class="field"><label for="paste-category">Category</label><select id="paste-category"><option value="">Auto-detect</option><option value="vehicle">Vehicle</option><option value="electronics">Electronics</option><option value="tools">Tools</option><option value="furniture">Furniture</option><option value="outdoor_equipment">Outdoor equipment</option></select></div><div class="field"><label for="listing-photos">Photos (optional)</label><div class="upload"><input id="listing-photos" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple></div></div></div><button class="submit" type="submit">Analyze This Deal</button><p class="note">Photos are read for condition and scam signals. Up to 4, 5&nbsp;MB each.</p><div id="paste-status" class="status" role="status"></div></form>
 
 <form class="auth-panel" id="manual-form"><div class="form-grid"><div class="field"><label for="asking-price">Asking price</label><input id="asking-price" type="number" min="1" step="1" placeholder="5000" required></div><div class="field"><label for="estimated-market-value">Estimated market value</label><input id="estimated-market-value" type="number" min="1" step="1" placeholder="6200" required></div><div class="field"><label for="manual-category">Category</label><select id="manual-category"><option value="vehicle">Vehicle</option><option value="electronics">Electronics</option><option value="tools">Tools</option><option value="furniture">Furniture</option><option value="outdoor_equipment">Outdoor equipment</option></select></div><div class="field"><label for="manual-condition">Condition</label><select id="manual-condition"><option value="unknown">Unknown</option><option value="new">New</option><option value="like_new">Like new</option><option value="good">Good</option><option value="fair">Fair</option><option value="poor">Poor</option></select></div><div class="field full"><label for="deal-title">Deal title</label><input id="deal-title" type="text" placeholder="2019 Ford F-150"></div></div><button class="submit" type="submit">Score These Numbers</button><p class="note">Manual scoring is free and unlimited &mdash; it does not use an analysis credit.</p><div id="manual-status" class="status" role="status"></div></form>
+<form class="auth-panel" id="sell-form">
+  <div class="form-grid">
+    <div class="field full"><label for="sell-photos">Photos (up to 8)</label><input id="sell-photos" type="file" accept="image/*" multiple></div>
+    <div class="field"><label for="sell-category">Category</label><select id="sell-category"><option value="">Auto-detect</option><option value="vehicle">Vehicle</option><option value="electronics">Electronics</option><option value="tools">Tools</option><option value="furniture">Furniture</option><option value="outdoor_equipment">Outdoor equipment</option><option value="musical_instrument">Musical instrument</option><option value="sporting_goods">Sporting goods</option><option value="appliance">Appliance</option><option value="collectible">Collectible</option></select></div>
+    <div class="field full"><label for="sell-notes">What should buyers know? (optional)</label><textarea id="sell-notes" rows="3" placeholder="What's included, any flaws, how old it is. For vehicles: VIN and mileage."></textarea></div>
+  </div>
+  <button class="submit" type="submit">Write My Listing</button>
+  <p class="note">Uses 1 analysis. Photos are resized on your device and used only to write your listing.</p>
+  <div id="sell-status" class="status" role="status"></div>
+  <div id="sell-result" class="sell-result" aria-live="polite">
+    <div class="sell-prices" id="sell-prices"></div>
+    <p class="sell-basis" id="sell-basis"></p>
+    <div class="sell-block"><div class="sell-block-head"><b>Title</b><button class="btn sell-copy" type="button" data-copy="sell-headline">Copy</button></div><p id="sell-headline"></p></div>
+    <div class="sell-block"><div class="sell-block-head"><b>Description</b><button class="btn sell-copy" type="button" data-copy="sell-description">Copy</button></div><p id="sell-description" class="sell-desc"></p></div>
+    <button class="btn primary sell-copy-all" type="button" id="sell-copy-all">Copy title, price &amp; description</button>
+    <div class="sell-block"><b>Condition</b><p id="sell-condition"></p><ul id="sell-flaws"></ul></div>
+    <div class="sell-block"><b>Photo tips</b><ul id="sell-photo-tips"></ul></div>
+    <div class="sell-block sell-reply">
+      <b>Buyer messaged you?</b>
+      <p class="sell-hint">Paste their message and get a reply to send. Your lowest price stays private.</p>
+      <div class="field"><textarea id="sell-buyer-message" rows="3" placeholder="e.g. Is this still available? Would you take $300?"></textarea></div>
+      <button class="btn" type="button" id="sell-reply-btn">Write My Reply</button>
+      <div id="sell-reply-status" class="status" role="status"></div>
+      <div id="sell-reply-out" class="sell-reply-out"><p id="sell-reply-text"></p><button class="btn sell-copy" type="button" data-copy="sell-reply-text">Copy reply</button><p class="sell-hint" id="sell-reply-tip"></p></div>
+    </div>
+  </div>
+</form>
 
 
 </section>
@@ -315,12 +342,15 @@ async function loadSharedReport(shareId){
 
 // Analyze: paste listing (AI pipeline) -----------------------------------
 function switchMode(mode){
-  const paste=mode==="paste",manual=mode==="manual";
-  pasteTab.classList.toggle("active",paste);manualTab.classList.toggle("active",manual);
-  pasteForm.classList.toggle("active",paste);manualForm.classList.toggle("active",manual);
+  const paste=mode==="paste",manual=mode==="manual",sell=mode==="sell";
+  pasteTab.classList.toggle("active",paste);manualTab.classList.toggle("active",manual);$("sell-tab").classList.toggle("active",sell);
+  pasteForm.classList.toggle("active",paste);manualForm.classList.toggle("active",manual);$("sell-form").classList.toggle("active",sell);
+  $("card-title").textContent=sell?"Sell something":"Analyze a deal";
+  $("card-copy").textContent=sell?"Snap photos. Get a ready-to-post listing and a price backed by real comparable listings.":"Paste a listing or enter the deal numbers yourself. Selling? Use Sell Something.";
 }
 pasteTab.addEventListener("click",()=>switchMode("paste"));
 manualTab.addEventListener("click",()=>switchMode("manual"));
+$("sell-tab").addEventListener("click",()=>switchMode("sell"));
 
 function readPhoto(file){
   return new Promise((resolve,reject)=>{
@@ -398,6 +428,91 @@ manualForm.addEventListener("submit",async e=>{
     setStatus(manualStatus,"Your DealTough analysis is ready.","success");
   }catch(err){setStatus(manualStatus,err instanceof Error?err.message:"Something went wrong. Please try again.","error")}
   finally{button.disabled=false;button.textContent=original}
+});
+
+// Sell mode ---------------------------------------------------------------
+const SELL_MAX_PHOTOS=8,SELL_MAX_EDGE=1600;
+let currentListing=null;
+function shrinkPhoto(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{
+      const scale=Math.min(1,SELL_MAX_EDGE/Math.max(img.naturalWidth,img.naturalHeight));
+      const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*scale);c.height=Math.round(img.naturalHeight*scale);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+      resolve({base64:c.toDataURL("image/jpeg",0.85).split(",")[1],mediaType:"image/jpeg"});
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error(file.name+" could not be read as a photo."))};
+    img.src=url;
+  });
+}
+const sellStatus=$("sell-status");
+function renderSellPrices(plan){
+  const box=$("sell-prices");box.innerHTML="";
+  if(!plan||!plan.available){$("sell-basis").textContent=(plan&&plan.notes&&plan.notes[0])||"No price plan this time.";return}
+  [["list","List at",plan.listAt,"Room to negotiate"],["mid","Expect around",plan.expectAround,"Typical sale price"],["floor","Don't go below",plan.lowestToAccept,"Private — for you only"]].forEach(([k,label,v,sub])=>{
+    const d=document.createElement("div");d.className="sell-price "+k;
+    const a=document.createElement("span");a.textContent=label;const b=document.createElement("strong");b.textContent=money(v);const c=document.createElement("small");c.textContent=sub;
+    d.append(a,b,c);box.appendChild(d);
+  });
+  const src=plan.basis==="vinaudit"?"dealer listings for this exact VIN":plan.basis==="ebay_sold"?"recent eBay sales":"current eBay listings";
+  $("sell-basis").textContent="Based on "+plan.comparableCount+" comparable "+(plan.basis==="vinaudit"?"data points from ":"")+src+". "+(plan.notes||[]).slice(0,1).join(" ");
+}
+function fillList(id,items){const ul=$(id);ul.innerHTML="";(items||[]).forEach(t=>{const li=document.createElement("li");li.textContent=t;ul.appendChild(li)});ul.style.display=ul.children.length?"":"none"}
+$("sell-form").addEventListener("submit",async e=>{
+  e.preventDefault();clearStatus(sellStatus);$("sell-result").classList.remove("visible");
+  if(!currentUser){openAuth("register");return}
+  const files=Array.prototype.slice.call($("sell-photos").files||[],0,SELL_MAX_PHOTOS);
+  if(!files.length){setStatus(sellStatus,"Add at least one photo of the item.","error");return}
+  const button=e.target.querySelector("button[type=submit]"),original=button.textContent;
+  try{
+    button.disabled=true;button.textContent="Reading your photos...";
+    const photos=await Promise.all(files.map(shrinkPhoto));
+    button.textContent="Writing your listing...";
+    const body={photos:photos,notes:$("sell-notes").value.trim()};const cat=$("sell-category").value;if(cat)body.category=cat;
+    const r=await fetch("/api/v1/listings/create",{method:"POST",headers:JSON_HEADERS,credentials:"same-origin",body:JSON.stringify(body)});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(data.error||"Couldn't write the listing.");
+    currentListing=data;const L=data.listing;
+    renderSellPrices(data.pricePlan);
+    $("sell-headline").textContent=L.headline;$("sell-description").textContent=L.description;
+    $("sell-condition").textContent=L.conditionSummary;fillList("sell-flaws",(L.flaws||[]).map(f=>"Flaw to mention: "+f));
+    const tips=["Use photo #"+(L.coverPhotoIndex+1)+" as your first (cover) photo."].concat((L.missingShots||[]).map(t=>"Add a photo: "+t));
+    fillList("sell-photo-tips",tips);
+    $("sell-reply-out").classList.remove("visible");
+    $("sell-result").classList.add("visible");
+    setStatus(sellStatus,(data.warnings&&data.warnings.length?data.warnings.join(" ")+" ":"")+"Your listing is ready. Check it, then copy it into Marketplace, OfferUp or Craigslist.",data.warnings&&data.warnings.length?"info":"success");
+    refreshAccount();
+  }catch(err){setStatus(sellStatus,err instanceof Error?err.message:"Something went wrong. Please try again.","error")}
+  finally{button.disabled=false;button.textContent=original}
+});
+document.addEventListener("click",async e=>{
+  const b=e.target.closest&&e.target.closest(".sell-copy");if(!b)return;
+  const t=$(b.dataset.copy);if(!t)return;
+  try{await navigator.clipboard.writeText(t.textContent.trim());const o=b.textContent;b.textContent="Copied!";setTimeout(()=>{b.textContent=o},1400)}catch{}
+});
+$("sell-copy-all").addEventListener("click",async()=>{
+  if(!currentListing)return;const L=currentListing.listing,P=currentListing.pricePlan;
+  const text=L.headline+"\n"+(P&&P.available?money(P.listAt)+"\n":"")+"\n"+L.description;
+  const b=$("sell-copy-all"),o=b.textContent;
+  try{await navigator.clipboard.writeText(text);b.textContent="Copied!";setTimeout(()=>{b.textContent=o},1400)}catch{}
+});
+$("sell-reply-btn").addEventListener("click",async()=>{
+  const status=$("sell-reply-status");clearStatus(status);$("sell-reply-out").classList.remove("visible");
+  if(!currentUser){openAuth("register");return}
+  if(!currentListing){setStatus(status,"Write your listing first.","error");return}
+  const msg=$("sell-buyer-message").value.trim();if(!msg){setStatus(status,"Paste the buyer's message first.","error");return}
+  const L=currentListing.listing,P=currentListing.pricePlan||{},b=$("sell-reply-btn"),o=b.textContent;
+  try{
+    b.disabled=true;b.textContent="Writing...";
+    const r=await fetch("/api/v1/listings/reply",{method:"POST",headers:JSON_HEADERS,credentials:"same-origin",body:JSON.stringify({itemName:L.itemName,description:L.description,buyerMessage:msg,listPrice:P.listAt,lowestToAccept:P.lowestToAccept})});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(data.error||"Couldn't write a reply.");
+    $("sell-reply-text").textContent=data.reply;$("sell-reply-tip").textContent=data.tipForSeller||"";
+    $("sell-reply-out").classList.add("visible");
+    if(data.intent==="scam_risk")setStatus(status,"Careful — this message looks like a common scam.","error");
+  }catch(err){setStatus(status,err instanceof Error?err.message:"Something went wrong.","error")}
+  finally{b.disabled=false;b.textContent=o}
 });
 
 copyBtn.addEventListener("click",async()=>{

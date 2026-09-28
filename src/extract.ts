@@ -4,7 +4,7 @@ import type { DealCategory, Condition, RiskSeverity } from "./types.js";
 
 let client: Anthropic | null = null;
 
-function getClient(): Anthropic {
+export function getClient(): Anthropic {
   if (!client) {
     client = new Anthropic({ apiKey: env.anthropicApiKey() });
   }

@@ -119,7 +119,7 @@ const ASKING_PRICE_PREMIUM = 0.12;
 // floor in ebay.ts; that filter and this warning describe the same cliff.
 const SUSPECT_COMPARABLE_RATIO = 0.35;
 
-function estimateMarketValue(input: DealInput): {
+export function estimateMarketValue(input: DealInput): {
   fairMarketValue: number;
   comparableCount: number;
   activeShare: number;

@@ -39,6 +39,8 @@ import {
   subscriptionIdFromInvoice,
   suspendForFailedPayment,
   verifyWebhookEvent,
+  createBillingPortal,
+  PortalUnavailableError,
 } from "./billing.js";
 import { dealToughBridgeStatus, requireMikeBridge } from "./mike-bridge.js";
 import { estimateLandscaping } from "./landscaping.js";
@@ -380,6 +382,25 @@ app.post("/api/billing/subscribe", requireAuth, async (req, res) => {
     log.error("billing.subscribe_failed", { userId: req.userId, error });
     const message = error instanceof Error ? error.message : "Could not start checkout";
     res.status(502).json({ error: message });
+  }
+});
+
+app.post("/api/billing/portal", requireAuth, async (req, res) => {
+  if (!isStripeConfigured()) {
+    res.status(503).json({ error: "Billing is not configured" });
+    return;
+  }
+  try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const url = await createBillingPortal(req.userId!, baseUrl);
+    res.status(200).json({ url });
+  } catch (error) {
+    if (error instanceof PortalUnavailableError) {
+      res.status(400).json({ error: "No billing account yet. Email support@doertoughmikeai.com if you need help." });
+      return;
+    }
+    log.error("billing.portal_failed", { message: error instanceof Error ? error.message : String(error) });
+    res.status(502).json({ error: "Could not open billing. Email support@doertoughmikeai.com and we will cancel or update it for you." });
   }
 });
 

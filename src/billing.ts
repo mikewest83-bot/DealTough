@@ -143,6 +143,25 @@ export async function createSubscriptionCheckout(
   return session.url;
 }
 
+// Stripe's hosted billing portal: lets a subscriber cancel or update their
+// card without contacting support. Only customers Stripe already knows about
+// (anyone who has been through checkout) can open it.
+export class PortalUnavailableError extends Error {}
+
+export async function createBillingPortal(userId: string, baseUrl: string): Promise<string> {
+  const user = await getPrisma().user.findUnique({
+    where: { id: userId },
+    select: { stripeCustomerId: true },
+  });
+  if (!user?.stripeCustomerId) throw new PortalUnavailableError("no_billing_account");
+  const session = await getStripe().billingPortal.sessions.create({
+    customer: user.stripeCustomerId,
+    return_url: `${baseUrl}/`,
+  });
+  if (!session.url) throw new Error("Stripe did not return a billing portal URL");
+  return session.url;
+}
+
 export async function activatePlus(
   userId: string,
   subscriptionId: string | null,

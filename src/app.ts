@@ -11,6 +11,7 @@ import { isAnthropicConfigured, isAuthConfigured, isDbConfigured, isEbayConfigur
 import { extractListingFields, type ExtractPhoto } from "./extract.js";
 import { fetchComparables } from "./ebay.js";
 import { decodeVin, fetchVinAuditValue, findMileage, findVin, vehicleSearchTitle, vinAuditComparables, VINAUDIT_MIN_COUNT } from "./vehicle.js";
+import { buildPricePlan, generateListing, suggestReply, SELL_CATEGORIES } from "./sell.js";
 import { getPrisma } from "./db.js";
 import { log } from "./log.js";
 import {
@@ -636,6 +637,123 @@ app.post("/api/v1/deals/from-listing", requireAuth, rateLimit("analyze", 6, 60_0
 });
 
 // ── sharing ─────────────────────────────────────────────────────────────
+// ===== Sell mode =====
+// Photos + notes -> a ready-to-post listing and a price plan. Costs one
+// analysis, same as the Buy side, refunded if the listing cannot be written.
+const SELL_MAX_PHOTOS = 8;
+const SELL_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
+
+app.post("/api/v1/listings/create", requireAuth, rateLimit("sell", 6, 60_000), async (req, res) => {
+  if (!isAnthropicConfigured()) {
+    res.status(503).json({ error: "Listing writer is not configured" });
+    return;
+  }
+  const photosInput = req.body?.photos;
+  if (!Array.isArray(photosInput) || photosInput.length === 0) {
+    res.status(400).json({ error: "Add at least one photo" });
+    return;
+  }
+  if (photosInput.length > SELL_MAX_PHOTOS) {
+    res.status(400).json({ error: `Use up to ${SELL_MAX_PHOTOS} photos` });
+    return;
+  }
+  for (const photo of photosInput) {
+    if (typeof photo?.base64 !== "string" || !SELL_MEDIA_TYPES.has(photo?.mediaType)) {
+      res.status(400).json({ error: "each photo needs base64 and a valid mediaType" });
+      return;
+    }
+  }
+  const photos = photosInput as ExtractPhoto[];
+  const notes = typeof req.body?.notes === "string" ? req.body.notes.slice(0, 2000) : "";
+  const categoryHint = req.body?.category;
+  if (categoryHint !== undefined && categoryHint !== "" && !SELL_CATEGORIES.includes(categoryHint)) {
+    res.status(400).json({ error: "category must be a valid category" });
+    return;
+  }
+
+  const charge = await consumeAnalysis(req.userId!);
+  if (!charge) {
+    res.status(402).json({ error: "You've used every analysis on your plan — upgrade to Plus or buy a credit pack" });
+    return;
+  }
+
+  let listing;
+  try {
+    listing = await generateListing(photos, notes, categoryHint || undefined);
+  } catch (error) {
+    await refundAnalysis(req.userId!, charge);
+    log.error("sell.listing_failed", { userId: req.userId, error });
+    res.status(502).json({ error: "Couldn't write the listing just now. Please try again." });
+    return;
+  }
+
+  // Prices come from comparables, never from the AI.
+  let comparables: Comparable[] = [];
+  let basis = "none";
+  const warnings: string[] = [];
+  let searchTitle = listing.searchQuery || listing.itemName;
+  if (listing.category === "vehicle") {
+    const vin = findVin(`${notes} ${listing.vin ?? ""}`);
+    if (vin) {
+      const decoded = await decodeVin(vin);
+      if (decoded) searchTitle = vehicleSearchTitle(decoded);
+      const mileage = findMileage(notes) ?? (listing.mileage && listing.mileage > 0 ? Math.round(listing.mileage) : null);
+      const value = await fetchVinAuditValue(vin, mileage);
+      if (value && value.count >= VINAUDIT_MIN_COUNT) {
+        comparables = vinAuditComparables(value);
+        basis = "vinaudit";
+      }
+    } else {
+      warnings.push("Add the VIN in your notes for a more accurate vehicle price.");
+    }
+  }
+  if (basis === "none" && isEbayConfigured()) {
+    try {
+      comparables = await fetchComparables({
+        title: searchTitle,
+        category: listing.category,
+        askingPrice: listing.roughValueEstimate > 0 ? listing.roughValueEstimate : undefined,
+      });
+      if (comparables.length) basis = comparables.some((c) => c.sold) ? "ebay_sold" : "ebay_active";
+    } catch (error) {
+      log.warn("sell.comparables_failed", { userId: req.userId, error });
+      warnings.push("Price data was unavailable, so no price plan could be made this time.");
+    }
+  }
+
+  const pricePlan = buildPricePlan(listing.category, listing.condition, comparables, basis);
+  res.status(200).json({ listing, pricePlan, warnings });
+});
+
+// Paste a buyer's message -> a reply to send. Free for signed-in users.
+app.post("/api/v1/listings/reply", requireAuth, rateLimit("reply", 10, 60_000), async (req, res) => {
+  if (!isAnthropicConfigured()) {
+    res.status(503).json({ error: "Reply helper is not configured" });
+    return;
+  }
+  const buyerMessage = typeof req.body?.buyerMessage === "string" ? req.body.buyerMessage.trim() : "";
+  const itemName = typeof req.body?.itemName === "string" ? req.body.itemName.trim().slice(0, 200) : "";
+  if (!buyerMessage || !itemName) {
+    res.status(400).json({ error: "itemName and buyerMessage are required" });
+    return;
+  }
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : undefined);
+  try {
+    const suggestion = await suggestReply({
+      itemName,
+      buyerMessage,
+      listPrice: num(req.body?.listPrice),
+      lowestToAccept: num(req.body?.lowestToAccept),
+      description: typeof req.body?.description === "string" ? req.body.description : undefined,
+      sellerNote: typeof req.body?.sellerNote === "string" ? req.body.sellerNote.slice(0, 500) : undefined,
+    });
+    res.status(200).json(suggestion);
+  } catch (error) {
+    log.error("sell.reply_failed", { userId: req.userId, error });
+    res.status(502).json({ error: "Couldn't write a reply just now. Please try again." });
+  }
+});
+
 // A share link is opt-in and revocable. Until the owner asks for one, a deal
 // has no shareId and the public route below cannot reach it at all.
 app.post("/api/v1/deals/:id/share", requireAuth, async (req, res) => {

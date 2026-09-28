@@ -15,6 +15,7 @@ original `https://dealtough-production.up.railway.app` stays active as well.
 | Web UI (`public/index.html`) | Paste listing → results, DealVault history, share links | session cookie |
 | Extraction (`src/extract.ts`) | Claude reads listing text/photos → structured fields + risk signals | `ANTHROPIC_API_KEY` |
 | Comparables (`src/ebay.ts`) | eBay comparables — sold prices when available, otherwise active listings | `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` |
+| Vehicles (`src/vehicle.ts`) | A VIN in the listing is decoded with NHTSA vPIC (free) so the comparable search targets the exact year/make/model/trim. With a VinAudit key, the VIN-exact, mileage-adjusted dealer-listing value replaces eBay vehicle comparables when at least 10 listings back it | `VINAUDIT_API_KEY` (optional) |
 | Engine (`src/engine.ts`) | Deterministic DTE-1.0 scoring — pure, no I/O | none |
 | Landscaping (`src/landscaping.ts`) | Deterministic project takeoffs and Southeast planning ranges | none |
 | DealVault (`prisma/`, `src/db.ts`) | Persists every analysis to Postgres | `DATABASE_URL` |
@@ -154,6 +155,7 @@ Environment (all optional locally; the affected feature just switches off):
 ```bash
 ANTHROPIC_API_KEY=...        # listing extraction (console.anthropic.com)
 EBAY_CLIENT_ID=...           # comparables (developer.ebay.com production keyset)
+VINAUDIT_API_KEY=...         # optional: VIN-exact vehicle values (marketvalue.vinaudit.com)
 EBAY_CLIENT_SECRET=...
 EBAY_MARKETPLACE_INSIGHTS=1  # opt in to sold prices — only if eBay approved the scope
 DATABASE_URL=...             # DealVault (Postgres)

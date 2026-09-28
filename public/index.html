@@ -360,7 +360,7 @@ pasteForm.addEventListener("submit",async e=>{
     currentDealId=data.dealId||null;isSharedView=false;$("shared-banner").classList.remove("visible");
     renderRecommendation(data.recommendation,data.extracted);
     const notes=[];
-    if(data.comparablesCount)notes.push(data.comparablesCount+" comparable "+(data.comparablesSource==="ebay_sold"?"sold listings":"listings")+" from "+(data.comparablesSource==="none"?"no source":"eBay"));
+    if(data.comparablesCount&&data.comparablesSource!=="vinaudit")notes.push(data.comparablesCount+" comparable "+(data.comparablesSource==="ebay_sold"?"sold listings":"listings")+" from "+(data.comparablesSource==="none"?"no source":"eBay"));
     if(data.warnings&&data.warnings.length)notes.push.apply(notes,data.warnings);
     const hasWarnings=Boolean(data.warnings&&data.warnings.length);
     setStatus(pasteStatus,notes.length?"Analysis ready — "+notes.join("; ")+".":"Your DealTough analysis is ready.",hasWarnings?"info":"success");

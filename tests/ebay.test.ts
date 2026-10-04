@@ -211,6 +211,181 @@ describe("machine wear parts are not the machine", () => {
   });
 });
 
+// Real titles and prices from a live search for this saw in Tools & Workshop
+// Equipment (Oct 2026). About sixty results came back and one was the saw.
+describe("parts sold under the machine's name", () => {
+  const reference = "DeWalt DWE7491RS table saw";
+  const saw = {
+    title: 'DEWALT DWE7491RS 10" Jobsite Table Saw 32 1/2 in Rip Capacity & Rolling Stand',
+    price: "563.06",
+  };
+  const parts: Array<[string, string]> = [
+    ["34.23", "New Dewalt OEM N603746 Table Saw Switch DWE7485 DWE7491RS DWE7491RS"],
+    ["54.86", "New Dewalt OEM N507600 Table Saw Guard DWE7491RS DWE7491RS DWE7491RS DWE7491RS"],
+    ["29.95", "Dewalt Genuine OEM Miter Gauge for DCS7485/DWE7491 Table Saw - N435108"],
+    ["299.99", "NEW OEM Dewalt DWE7491RS Table Saw REPLACEMENT MOTOR, Complete"],
+    ["14.81", 'Dado Throat Plate Compatible with Dewalt 10" Portable Table Saw DWE7490 DWE7491'],
+    ["37.33", "New Dewalt OEM N507744 Table Saw Fence Beam DWE7491RS DWE7491RS"],
+    ["15.65", "New Dewalt OEM N507485 Table Saw Rail DWE7491RS DWE7491RS"],
+    ["69.24", "New Dewalt OEM N645999 Table Saw Field DWE7491RS DWE7491RS"],
+    ["28.73", "New DeWalt OEM 5140135-51 5140135-51-2 Table Saw Bevel Handle (2 Pack) DWE7491RS"],
+    ["24.99", "Genuine DeWalt N507559 Miter Gauge Replacement For DWE7491RS Table Saw"],
+    ["27.00", "DEWALT DWE7402DI Table Saw Dado Insert Plate for DWE7491RS DWE7485"],
+    ["24.99", "NEW OEM Dewalt DWE7491RS Table Saw POWER CORD w/ Left & Right BRACKETS ASSY"],
+    ["12.99", "2 Pack Table Saw Wrench N506977 for Dewalt Table Saw DWE7485 DWE7491RS DWE7491RS"],
+    ["29.00", "DEWALT DWE7491RS 10 in Jobsite Table Saw PARTS MITER GAUGE ASSY DWB-N435108- W19"],
+    ["24.95", "DeWalt Table Saw Zero Clearance Insert - DWE7491, DWE7492, DWE7491RS, DWE7480, D"],
+    ["22.54", "For De-walt Miter Gauge For DWE7491RS Table Saw - N507559"],
+    ["27.50", "N603746 Table Saw Switch Replacement for Dewalt Table Saw DWE7485 DWE7491RS"],
+    ["15.90", "Table Saw Wrench Hardened Steel for DeWalt DWE7490X DWE7485 DWE7491RS DWE7499GD"],
+    ["29.99", "Zero Clearance Throat Plate Insert for DeWalt DWE7491 Table Saw Yellow 1 pc NEW"],
+    ["9.51", "QTY 2 Compatible w/DeWalt 5140134-79 Table Saw Fence Knob DWE7490X DWE7491RS B"],
+    ["10.79", "New Dewalt OEM N506822 Table Saw Fence Knob DWE7491RS DWE7491RS"],
+    ["7.99", "New Dewalt OEM N539048 Table Saw Brush Cap DWE7491RS DWE7491RS"],
+    ["17.10", "New Dewalt OEM N506922 Table Saw Cover DWE7491RS DWE7491RS"],
+  ];
+  const liveResults = {
+    itemSummaries: [
+      ...parts.slice(0, 2).map(([value, title]) => ({ title, price: { value } })),
+      { title: saw.title, price: { value: saw.price }, condition: "New" },
+      ...parts.slice(2).map(([value, title]) => ({ title, price: { value } })),
+      // A different saw from the same search: wrong model, already rejected.
+      { title: "DEWALT 15 Amp 8-1/4 in. Compact Portable Jobsite Table Saw (DWE7485)", price: { value: "337.76" } },
+    ],
+  };
+
+  for (const [price, title] of parts) {
+    it(`drops "${title.slice(0, 48)}..."`, () => {
+      const result = mapBrowseResultsToComparables(
+        { itemSummaries: [{ title, price: { value: price } }] },
+        reference,
+      );
+      expect(result).toEqual([]);
+    });
+  }
+
+  it("keeps the saw, however its seller lists what comes with it", () => {
+    const whole = [
+      saw.title,
+      "DeWalt DWE7491RS 10 in Table Saw with Rolling Stand, Fence and Blade Guard - Used",
+      "DEWALT DWE7491RS Table Saw w/ stand - local pickup, works great, for sale",
+      "DeWalt DWE7491RS jobsite table saw for woodworking, lightly used",
+    ];
+    for (const title of whole) {
+      const result = mapBrowseResultsToComparables(
+        { itemSummaries: [{ title, price: { value: "400.00" } }] },
+        reference,
+      );
+      expect(result, title).toHaveLength(1);
+    }
+  });
+
+  it("values the saw the same whatever the seller is asking", () => {
+    const withoutPrice = mapBrowseResultsToComparables(liveResults, reference);
+    expect(withoutPrice.map((c) => c.price)).toEqual([563.06]);
+    // Before: $8 parts with no asking price, and a different answer at each of these.
+    for (const asking of [100, 225, 450]) {
+      expect(mapBrowseResultsToComparables(liveResults, reference, asking)).toEqual(withoutPrice);
+    }
+  });
+
+  it("does not drop a part when the part is what you are shopping for", () => {
+    const result = mapBrowseResultsToComparables(
+      {
+        itemSummaries: [
+          { title: "Dewalt Genuine OEM Miter Gauge for DWE7491RS Table Saw - N507559", price: { value: "30.45" } },
+          { title: "For De-walt Miter Gauge For DWE7491RS Table Saw - N507559", price: { value: "22.54" } },
+        ],
+      },
+      "Miter gauge for DeWalt DWE7491RS table saw",
+    );
+    expect(result).toHaveLength(2);
+
+    const motor = mapBrowseResultsToComparables(
+      { itemSummaries: [{ title: "NEW OEM Dewalt DWE7491RS Table Saw REPLACEMENT MOTOR, Complete", price: { value: "299.99" } }] },
+      "DeWalt DWE7491RS replacement motor OEM",
+    );
+    expect(motor).toHaveLength(1);
+  });
+
+  it("keeps a combo kit that names its own contents", () => {
+    const result = mapBrowseResultsToComparables(
+      {
+        itemSummaries: [{
+          title: "DEWALT DCK299P2 20V MAX XR Hammer Drill & Impact Driver Combo Kit DCD996 DCF887",
+          price: { value: "329.00" },
+        }],
+      },
+      "DeWalt DCK299P2 20V combo kit",
+    );
+    expect(result).toHaveLength(1);
+  });
+
+  it("leaves other kinds of listing alone", () => {
+    const kept: Array<[string, string]> = [
+      ["Apple iPhone 13 128GB", "Apple iPhone 13 128GB Unlocked - compatible with Verizon AT&T T-Mobile"],
+      ["2019 Ford F-150 XLT", "2019 Ford F-150 XLT SuperCrew 4x4 - one owner, ready for work"],
+      ["Oak dining table", "Solid oak dining table, some assembly required"],
+      ["Honda EU2200i generator", "Honda EU2200i 2200W Inverter Generator - great for camping"],
+      ["Milwaukee 2804-20 hammer drill", "Milwaukee 2804-20 M18 FUEL 1/2 in Hammer Drill (Tool Only)"],
+    ];
+    for (const [ref, title] of kept) {
+      const result = mapBrowseResultsToComparables(
+        { itemSummaries: [{ title, price: { value: "250.00" } }] },
+        ref,
+      );
+      expect(result, title).toHaveLength(1);
+    }
+  });
+
+  it("does not mistake ordinary words for accessory words", () => {
+    // "pin" inside shipping, camping and pine; "case" inside bookcase; "hat"
+    // inside that; "cover" inside discover.
+    const kept: Array<[string, string]> = [
+      ["DeWalt DWE7491RS table saw", "DeWalt DWE7491RS Table Saw with Stand - Free Shipping"],
+      ["6 drawer dresser", "Solid Pine 6 Drawer Dresser"],
+      ["Oak bookshelf", "Oak Bookshelf Bookcase 5 Shelf"],
+      ["Weber Genesis II E-310 gas grill", "Weber Genesis II E-310 Gas Grill that works great"],
+    ];
+    for (const [ref, title] of kept) {
+      const result = mapBrowseResultsToComparables(
+        { itemSummaries: [{ title, price: { value: "250.00" } }] },
+        ref,
+      );
+      expect(result, title).toHaveLength(1);
+    }
+    // The accessories themselves are still dropped, singular or plural.
+    const dropped: Array<[string, string]> = [
+      ["Apple iPhone 13 128GB", "Apple iPhone 13 128GB Cases 3 colors"],
+      ["2019 Ford F-150 XLT", "2019 Ford F-150 XLT Seat Covers"],
+      ["Apple iPhone 13 128GB", "Apple iPhone 13 128GB lapel pin"],
+    ];
+    for (const [ref, title] of dropped) {
+      const result = mapBrowseResultsToComparables(
+        { itemSummaries: [{ title, price: { value: "20.00" } }] },
+        ref,
+      );
+      expect(result, title).toEqual([]);
+    }
+  });
+
+  it("drops parts for other machines written the same way", () => {
+    const dropped: Array<[string, string]> = [
+      ["Honda EU2200i generator", "Carburetor Kit Fits Honda EU2200i EU2200 Generator Carb"],
+      ["Honda EU2200i generator", "Generator parallel cables compatible with Honda EU2200i EU2000i"],
+      ["Milwaukee 2804-20 hammer drill", "OEM Milwaukee 2804-20 Hammer Drill Chuck 42-66-0935"],
+      ["Makita LS1019L miter saw", "3 Pack carbon brushes for Makita LS1019L LS1219L miter saw"],
+    ];
+    for (const [ref, title] of dropped) {
+      const result = mapBrowseResultsToComparables(
+        { itemSummaries: [{ title, price: { value: "25.00" } }] },
+        ref,
+      );
+      expect(result, title).toEqual([]);
+    }
+  });
+});
+
 describe("mapBrowseResultsToComparables", () => {
   it("maps normal Browse API results to honestly-labeled comparables", () => {
     const result = mapBrowseResultsToComparables({

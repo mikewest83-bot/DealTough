@@ -12,6 +12,7 @@ describe("Managed Payments checkout", () => {
     f.find.mockResolvedValue({ id: "u1", stripeCustomerId: "cus_fixture" });
     f.create.mockResolvedValue({ url: "https://checkout.stripe.com/fixture" });
     vi.stubEnv("STRIPE_MANAGED_PAYMENTS_ENABLED", "true");
+    vi.stubEnv("STRIPE_CREDIT_PACK_TAX_CODE", "txcd_10105001");
     vi.stubEnv("STRIPE_PLUS_PRICE_ID", "price_fixture");
   });
   it("covers credit purchases without changing credits or price", async () => {
@@ -30,6 +31,11 @@ describe("Managed Payments checkout", () => {
     expect(p.managed_payments).toEqual({ enabled: true });
     expect(p.line_items).toEqual([{ price: "price_fixture", quantity: 1 }]);
     expect(p.subscription_data.metadata).toEqual({ userId: "u1", purchaseType: "plus" });
+  });
+  it("blocks managed credit checkout until its tax classification is configured", async () => {
+    vi.stubEnv("STRIPE_CREDIT_PACK_TAX_CODE", "");
+    await expect(createCheckoutSession("u1", "pack_10", "https://example.test")).rejects.toThrow("tax classification");
+    expect(f.create).not.toHaveBeenCalled();
   });
   it("leaves existing checkout unchanged until activation", async () => {
     vi.stubEnv("STRIPE_MANAGED_PAYMENTS_ENABLED", "false");

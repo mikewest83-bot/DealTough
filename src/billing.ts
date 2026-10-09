@@ -82,13 +82,17 @@ export async function createCheckoutSession(
 
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
+    ...(process.env.STRIPE_MANAGED_PAYMENTS_ENABLED === "true" ? { managed_payments: { enabled: true } } : {}),
     customer: await getOrCreateCustomer(userId),
     line_items: [
       {
         price_data: {
           currency: "usd",
           unit_amount: pack.priceCents,
-          product_data: { name: `DealTough — ${pack.label}` },
+          product_data: {
+            name: `DealTough — ${pack.label}`,
+            tax_code: "txcd_10105001", // Cloud-based AI, personal use.
+          },
         },
         quantity: 1,
       },
@@ -130,6 +134,7 @@ export async function createSubscriptionCheckout(
 
   const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
+    ...(process.env.STRIPE_MANAGED_PAYMENTS_ENABLED === "true" ? { managed_payments: { enabled: true } } : {}),
     customer: await getOrCreateCustomer(userId),
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${baseUrl}/?checkout=success&plan=plus`,

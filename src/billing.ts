@@ -82,7 +82,7 @@ export async function createCheckoutSession(
 
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
-    ...(process.env.STRIPE_MANAGED_PAYMENTS_ENABLED === "true" ? { managed_payments: { enabled: true } } : {}),
+    ...(process.env.STRIPE_MANAGED_PAYMENTS_ENABLED === "true" ? { managed_payments: { enabled: true }, integration_identifier: "dealtough-jwpxkrnt" } : {}),
     customer: await getOrCreateCustomer(userId),
     line_items: [
       {
@@ -134,7 +134,7 @@ export async function createSubscriptionCheckout(
 
   const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
-    ...(process.env.STRIPE_MANAGED_PAYMENTS_ENABLED === "true" ? { managed_payments: { enabled: true } } : {}),
+    ...(process.env.STRIPE_MANAGED_PAYMENTS_ENABLED === "true" ? { managed_payments: { enabled: true }, integration_identifier: "dealtough-jwpxkrnt" } : {}),
     customer: await getOrCreateCustomer(userId),
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${baseUrl}/?checkout=success&plan=plus`,

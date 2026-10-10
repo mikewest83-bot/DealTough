@@ -80,15 +80,23 @@ export async function createCheckoutSession(
   const pack = CREDIT_PACKS.find((p) => p.id === packId);
   if (!pack) throw new Error("Unknown credit pack");
 
+  const managedPayments = process.env.STRIPE_MANAGED_PAYMENTS_ENABLED === "true";
+  const taxCode = process.env.STRIPE_CREDIT_PACK_TAX_CODE;
+  if (managedPayments && !taxCode) throw new Error("Credit-pack tax classification is not configured");
+
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
+    ...(managedPayments ? { managed_payments: { enabled: true }, integration_identifier: "dealtough-jwpxkrnt" } : {}),
     customer: await getOrCreateCustomer(userId),
     line_items: [
       {
         price_data: {
           currency: "usd",
           unit_amount: pack.priceCents,
-          product_data: { name: `DealTough — ${pack.label}` },
+          product_data: {
+            name: `DealTough — ${pack.label}`,
+            ...(taxCode ? { tax_code: taxCode } : {}),
+          },
         },
         quantity: 1,
       },
@@ -130,6 +138,7 @@ export async function createSubscriptionCheckout(
 
   const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
+    ...(process.env.STRIPE_MANAGED_PAYMENTS_ENABLED === "true" ? { managed_payments: { enabled: true }, integration_identifier: "dealtough-jwpxkrnt" } : {}),
     customer: await getOrCreateCustomer(userId),
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${baseUrl}/?checkout=success&plan=plus`,

@@ -3,6 +3,7 @@ import { analyzeDeal } from "./engine.js";
 import { fetchComparables, mergeComparables } from "./ebay.js";
 import type { Comparable, CostItem, DealCategory, DealInput } from "./types.js";
 import { isEbayConfigured } from "./env.js";
+import { valueVehicle } from './vehicle-valuation.js';
 
 const VALID_CATEGORIES: DealCategory[] = [
   "vehicle",
@@ -174,7 +175,7 @@ export function installMarketValueRoute(app: Application): void {
       return;
     }
     if (!rateLimit(req, res, trusted)) return;
-    if (!isEbayConfigured()) {
+    if (String(req.body?.category || '').trim().toLowerCase() !== 'vehicle' && !isEbayConfigured()) {
       res.status(503).json({ error: "Market-value comparables are not configured" });
       return;
     }
@@ -209,6 +210,11 @@ export function installMarketValueRoute(app: Application): void {
     }
 
     try {
+      if (category === 'vehicle') {
+        res.status(200).json(await valueVehicle({ title, condition, description, location, askingPrice,
+          vehicle: req.body?.vehicle && typeof req.body.vehicle === 'object' && !Array.isArray(req.body.vehicle) ? req.body.vehicle : {} }));
+        return;
+      }
       const comparableResult = await fetchComparablesWithRecovery({
         title,
         category: category as DealCategory,

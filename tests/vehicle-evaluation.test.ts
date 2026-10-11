@@ -12,5 +12,6 @@ it('rejects after-the-fact estimates, duplicate outcomes and mismatched value ty
   expect(() => evaluateVehicleOutcomes([{ ...fixture, estimatedAt: '2026-01-03' }])).toThrow();
   expect(() => evaluateVehicleOutcomes([fixture, fixture])).toThrow();
   expect(() => evaluateVehicleOutcomes([{ ...fixture, saleType: 'tradein' }])).toThrow();
+  expect(() => evaluateVehicleOutcomes([{ ...fixture, ownerReviewed: 'false' as unknown as boolean }])).toThrow();
   expect(evaluateVehicleOutcomes([]).meanAbsoluteError).toBeNull();
 });

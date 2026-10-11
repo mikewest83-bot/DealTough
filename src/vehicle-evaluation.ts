@@ -8,7 +8,7 @@ export type VehicleOutcome = {
 export function evaluateVehicleOutcomes(rows: VehicleOutcome[]) {
   const ids = new Set<string>();
   for (const r of rows) {
-    if (!r.id || ids.has(r.id) || !r.ownerReviewed || !r.sourceRef?.trim()
+    if (!r.id || ids.has(r.id) || r.ownerReviewed !== true || !r.sourceRef?.trim()
       || !['retail', 'tradein'].includes(r.valueType) || r.valueType !== r.saleType
       || !Number.isFinite(r.soldPrice) || r.soldPrice <= 0
       || !Number.isFinite(Date.parse(r.estimatedAt)) || !Number.isFinite(Date.parse(r.soldAt))

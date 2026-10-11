@@ -21,6 +21,10 @@ export type RiskSeverity = "low" | "medium" | "high" | "critical";
 
 export interface Comparable {
   price: number;
+  title?: string;
+  sourceId?: string;
+  sourceUrl?: string;
+  observedAt?: string; // Retrieval time, not the sale date.
   similarity?: number; // 0..1
   source?: string;
   sold?: boolean;

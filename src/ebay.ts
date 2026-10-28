@@ -19,7 +19,7 @@ interface CachedToken {
 // asking for a scope the account is not approved for fails the whole request.
 const tokenCache = new Map<string, CachedToken>();
 
-async function getAppToken(scope: string = BASE_SCOPE): Promise<string> {
+async function getAppToken(scope: string = BASE_SCOPE, signal?: AbortSignal): Promise<string> {
   const cached = tokenCache.get(scope);
   if (cached && cached.expiresAt > Date.now() + 60_000) {
     return cached.token;
@@ -31,6 +31,7 @@ async function getAppToken(scope: string = BASE_SCOPE): Promise<string> {
 
   const res = await fetch(TOKEN_URL, {
     method: "POST",
+    signal,
     headers: {
       Authorization: `Basic ${basicAuth}`,
       "Content-Type": "application/x-www-form-urlencoded",
@@ -52,6 +53,8 @@ async function getAppToken(scope: string = BASE_SCOPE): Promise<string> {
 
 export interface EbaySearchParams {
   title: string;
+  referenceTitle?: string; // Original item identity, even when the query broadens.
+  signal?: AbortSignal;
   category?: DealCategory;
   askingPrice?: number;
   limit?: number;
@@ -168,7 +171,9 @@ const MIN_SIMILARITY = 0.34;
 //
 // So if the reference names a model, the candidate has to name it too.
 const isModelCode = (token: string): boolean =>
-  /[a-z]/.test(token) && /\d/.test(token);
+  ((/[a-z]/.test(token) && /\d/.test(token)) || (/^\d{4,8}$/.test(token) && !/^(?:19|20)\d{2}$/.test(token)))
+  && !/^\d+(?:in|inch|inches|v|volt|volts|amp|amps|ah|hp|cfm|gal|ft|mm|cc)$/.test(token)
+  && !/^(?:4x4|4x2|2wd|4wd)$/.test(token);
 
 // Prefix-tolerant in both directions: "hrx217hya" and "hrx217vka4" are trim
 // levels of the reference's "hrx217" and belong in the comparable set, while
@@ -178,7 +183,7 @@ function mentionsSameModel(reference: string, candidate: string): boolean {
   if (!codes.length) return true;
 
   const candidateCodes = tokenize(candidate).filter(isModelCode);
-  return codes.some((code) =>
+  return codes.every((code) =>
     candidateCodes.some(
       (other) => other.startsWith(code) || code.startsWith(other),
     ),
@@ -232,12 +237,101 @@ function isDifferentBundle(candidateTitle: string, referenceTitle: string): bool
   return candidate !== pieceCount(referenceTitle);
 }
 
+// Whole words, with an optional plural. Matched as bare substrings these
+// markers also fired inside ordinary words: "pin" in "shipping", "camping" and
+// "pine", "case" in "bookcase", "hat" in "that", "cover" in "discover". A real
+// listing that said "free shipping" was thrown out as an accessory.
+const ACCESSORY_PATTERNS: RegExp[] = ACCESSORY_MARKERS.map(
+  (marker) => new RegExp(`(?<![a-z0-9])${marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}s?(?![a-z0-9])`),
+);
+
 function isAccessory(candidateTitle: string, referenceTitle: string): boolean {
   const candidate = candidateTitle.toLowerCase();
   const reference = referenceTitle.toLowerCase();
-  return ACCESSORY_MARKERS.some(
-    (marker) => candidate.includes(marker) && !reference.includes(marker),
+  return ACCESSORY_PATTERNS.some(
+    (pattern) => pattern.test(candidate) && !pattern.test(reference),
   );
+}
+
+// ── parts sold under the machine's name ────────────────────────────────
+// A part is listed with the name of the machine it fits, so it shares every
+// word of the search, names the same model, and sits in the same category.
+// A live search for a DeWalt DWE7491RS table saw returned about sixty results
+// and ONE of them was the saw: the rest were switches, guards, wrenches,
+// throat plates and a $300 replacement motor. Nothing above catches them, and
+// the only thing left separating them from the saw was the price floor, which
+// is tied to the asking price. So the saw was "worth" $8 with no asking price,
+// $23 at a $100 ask, $240 at $225 and $210 at $450.
+//
+// Part names cannot be listed (a real saw is sold "with fence, stand and blade
+// guard"). What gives a part away is how its listing is written.
+const PART_WORDING: RegExp[] = [
+  /\boem\b/,
+  /\breplacement\b/,
+  /\bassy\b/,
+  /\b\d+\s*-?\s*pack\b/,
+  /\bpack\s+of\s+\d+\b/,
+  /\bqty\s*:?\s*\d+\b/,
+  /\bthroat\s+plate\b/,
+  /\bzero\s+clearance\b/,
+  /\b(?:dado\s+insert|insert\s+plate)\b/,
+];
+
+// "for DeWalt", "fits DWE7491RS", "compatible with Dewalt": the listing is for
+// something that goes on the machine. Matched only against the reference's own
+// maker and model, so "for sale", "for woodworking" and "compatible with
+// Verizon" are left alone.
+const FITS_PHRASE = /\b(?:for|fits?|compatible\s+with|compatible\s+w\/?)\s+(?:the\s+|your\s+)?([a-z0-9][a-z0-9\-\/]*)/g;
+
+const sameModel = (a: string, b: string): boolean => a.startsWith(b) || b.startsWith(a);
+
+function fitsTheReference(candidate: string, referenceTokens: string[]): boolean {
+  const maker = referenceTokens[0] && /^[a-z]+$/.test(referenceTokens[0]) ? referenceTokens[0] : null;
+  const models = referenceTokens.filter(isModelCode);
+  if (!maker && !models.length) return false;
+
+  for (const match of candidate.matchAll(FITS_PHRASE)) {
+    // "DCS7485/DWE7491" names two machines; "De-walt" is one word.
+    for (const piece of match[1].split("/")) {
+      const word = piece.replace(/-/g, "");
+      if (!word) continue;
+      if (maker && word === maker) return true;
+      if (isModelCode(word) && models.some((model) => sameModel(model, word))) return true;
+    }
+  }
+  return false;
+}
+
+// A part fits a family of machines and says so: "DWE7491, DWE7492, DWE7480".
+// Two or more OTHER models from the reference's own family is a fitment list.
+// A combo kit names its contents too (DCK299P2 with DCD996 and DCF887), but
+// those are different product lines, not siblings of the kit's own number.
+function listsSiblingModels(candidate: string, referenceTokens: string[]): boolean {
+  const models = referenceTokens.filter((token) => isModelCode(token) && token.length >= 5);
+  if (!models.length) return false;
+
+  const siblings = new Set<string>();
+  for (const token of tokenize(candidate)) {
+    if (!isModelCode(token) || token.length < 5) continue;
+    for (const model of models) {
+      if (!sameModel(model, token) && token.slice(0, 3) === model.slice(0, 3)) siblings.add(token);
+    }
+  }
+  return siblings.size >= 2;
+}
+
+// As with the accessory list: none of this applies when the part is what the
+// buyer is shopping for, i.e. when the reference title is worded the same way.
+function isPartForTheItem(candidateTitle: string, referenceTitle: string): boolean {
+  const candidate = candidateTitle.toLowerCase();
+  const reference = referenceTitle.toLowerCase();
+  // "Miter gauge for DeWalt DWE7491RS" is a search for the part itself, and
+  // the listings written like parts are exactly the ones it wants.
+  if (/\b(?:for|fits?|compatible)\b/.test(reference)) return false;
+  if (PART_WORDING.some((pattern) => pattern.test(candidate) && !pattern.test(reference))) return true;
+
+  const referenceTokens = tokenize(referenceTitle);
+  return fitsTheReference(candidate, referenceTokens) || listsSiblingModels(candidate, referenceTokens);
 }
 
 // ── condition ───────────────────────────────────────────────────────────
@@ -299,15 +393,41 @@ function rejectPriceOutliers(comparables: Comparable[]): Comparable[] {
 }
 
 interface BrowseItem {
-  price?: { value?: string };
+  price?: { value?: string; currency?: string };
   title?: string;
   condition?: string;
+  itemId?: string;
+  itemWebUrl?: string;
 }
 
 interface ItemSale {
-  lastSoldPrice?: { value?: string };
+  lastSoldPrice?: { value?: string; currency?: string };
   title?: string;
   condition?: string;
+  itemId?: string;
+  itemWebUrl?: string;
+}
+
+function sourceUrl(value: unknown): string | undefined {
+  try {
+    const url = new URL(String(value));
+    if (url.protocol !== 'https:' || url.username || url.password || !/(^|\.)ebay\.com$/.test(url.hostname)) return undefined;
+    if (!/^\/itm\/(?:[^/]+\/)?\d+\/?$/.test(url.pathname)) return undefined;
+    url.search = ''; url.hash = '';
+    return url.toString();
+  } catch { return undefined; }
+}
+
+// A listing seen by several queries is still one piece of evidence.
+export function mergeComparables(...groups: Comparable[][]): Comparable[] {
+  const seen = new Set<string>();
+  return groups.flat().filter(comp => {
+    const identity = comp.sourceUrl || comp.sourceId;
+    if (!identity) return true; // Preserve compatibility with supplied price-only rows.
+    const key = `${comp.source}|${identity}`;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
 }
 
 // Shared by the active and sold mappers: relevance gate, condition parse,
@@ -315,7 +435,7 @@ interface ItemSale {
 // without it there is nothing to judge relevance against, so every priced
 // item is kept at a neutral weight.
 function buildComparables(
-  rows: Array<{ price?: string; title?: string; condition?: string }>,
+  rows: Array<{ price?: string; currency?: string; title?: string; condition?: string; itemId?: string; itemWebUrl?: string }>,
   referenceTitle: string | undefined,
   source: string,
   sold: boolean,
@@ -324,6 +444,7 @@ function buildComparables(
   const comparables: Comparable[] = [];
   for (const row of rows) {
     if (!row.price) continue;
+    if (row.currency && row.currency !== 'USD') continue;
     const price = Number(row.price);
     if (!Number.isFinite(price) || price <= 0) continue;
 
@@ -331,6 +452,7 @@ function buildComparables(
     if (referenceTitle) {
       const title = row.title ?? "";
       if (isAccessory(title, referenceTitle)) continue;
+      if (isPartForTheItem(title, referenceTitle)) continue;
       if (isDifferentBundle(title, referenceTitle)) continue;
       if (!mentionsSameModel(referenceTitle, title)) continue;
       similarity = titleSimilarity(referenceTitle, title);
@@ -339,6 +461,9 @@ function buildComparables(
 
     comparables.push({
       price,
+      ...(row.title ? { title: row.title.slice(0, 240) } : {}),
+      ...(row.itemId ? { sourceId: row.itemId } : {}),
+      ...(sourceUrl(row.itemWebUrl) ? { sourceUrl: sourceUrl(row.itemWebUrl) } : {}),
       similarity,
       source,
       sold,
@@ -346,7 +471,7 @@ function buildComparables(
     });
   }
 
-  return rejectPriceOutliers(rejectPartsPricedBelow(comparables, askingPrice));
+  return rejectPriceOutliers(rejectPartsPricedBelow(mergeComparables(comparables), askingPrice));
 }
 
 // Pure — no network. This is what tests exercise directly against fixture JSON.
@@ -361,7 +486,7 @@ export function mapBrowseResultsToComparables(
   return buildComparables(
     items.map((raw) => {
       const item = raw as BrowseItem;
-      return { price: item.price?.value, title: item.title, condition: item.condition };
+      return { price: item.price?.value, currency: item.price?.currency, title: item.title, condition: item.condition, itemId: item.itemId, itemWebUrl: item.itemWebUrl };
     }),
     referenceTitle,
     "ebay_active",
@@ -384,7 +509,7 @@ export function mapItemSalesToComparables(
   return buildComparables(
     items.map((raw) => {
       const item = raw as ItemSale;
-      return { price: item.lastSoldPrice?.value, title: item.title, condition: item.condition };
+      return { price: item.lastSoldPrice?.value, currency: item.lastSoldPrice?.currency, title: item.title, condition: item.condition, itemId: item.itemId, itemWebUrl: item.itemWebUrl };
     }),
     referenceTitle,
     "ebay_sold",
@@ -417,6 +542,7 @@ const comparableCache = new Map<string, CacheEntry>();
 function cacheKey(params: EbaySearchParams): string {
   return [
     params.title.trim().toLowerCase(),
+    params.referenceTitle?.trim().toLowerCase() ?? '',
     params.category ?? "",
     params.askingPrice ?? "",
     params.limit ?? "",
@@ -450,26 +576,48 @@ export function clearComparableCache(): void {
 }
 
 async function fetchSoldComparables(params: EbaySearchParams): Promise<Comparable[]> {
-  const token = await getAppToken(INSIGHTS_SCOPE);
-
-  const url = new URL(INSIGHTS_URL);
-  url.searchParams.set("q", params.title);
-  url.searchParams.set("limit", String(params.limit ?? 50));
+  const token = await getAppToken(INSIGHTS_SCOPE, params.signal);
   const soldCategory = params.category && CATEGORY_IDS[params.category];
-  if (soldCategory) url.searchParams.set("category_ids", soldCategory);
 
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
-    },
-  });
+  let comparables: Comparable[] = [];
+  let used = params.title;
+  let attempts = 0;
 
-  if (!res.ok) {
-    throw new Error(`eBay Marketplace Insights request failed: ${res.status}`);
+  // Same ladder as active listings: a full listing title often matches
+  // nothing in completed sales either. Relevance is still judged against
+  // the original title after a broader query returns rows.
+  for (const query of queryLadder(params.title)) {
+    const url = new URL(INSIGHTS_URL);
+    url.searchParams.set("q", query);
+    url.searchParams.set("limit", String(params.limit ?? 50));
+    if (soldCategory) url.searchParams.set("category_ids", soldCategory);
+
+    const res = await fetch(url, {
+      signal: params.signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`eBay Marketplace Insights request failed: ${res.status}`);
+    }
+
+    const body = await res.json();
+    attempts += 1;
+    used = query;
+
+    const observedAt = new Date().toISOString();
+    comparables = mergeComparables(comparables, mapItemSalesToComparables(body, params.referenceTitle || params.title, params.askingPrice).map(comp => ({ ...comp, observedAt })));
+    if (comparables.length >= ENOUGH_COMPARABLES) break;
   }
 
-  return mapItemSalesToComparables(await res.json(), params.title, params.askingPrice);
+  if (attempts > 1) {
+    log.debug("ebay.sold_query_broadened", { title: params.title, used, attempts });
+  }
+
+  return comparables;
 }
 
 // Browse ANDs every word in the query, so an over-specific title matches
@@ -488,7 +636,7 @@ async function fetchSoldComparables(params: EbaySearchParams): Promise<Comparabl
 // So walk from the full title toward shorter prefixes and stop at the first
 // query that returns enough to work with: the longest query that answers is
 // the most specific one available.
-const ENOUGH_RAW_RESULTS = 8;
+const ENOUGH_COMPARABLES = 5;
 
 // Three words is the floor. Below it a search for a Civic starts returning
 // Accords, and while the year token usually saves us — it is weighted double,
@@ -506,10 +654,10 @@ function queryLadder(title: string): string[] {
 }
 
 async function fetchActiveComparables(params: EbaySearchParams): Promise<Comparable[]> {
-  const token = await getAppToken();
+  const token = await getAppToken(BASE_SCOPE, params.signal);
   const activeCategory = params.category && CATEGORY_IDS[params.category];
 
-  let data: unknown = null;
+  let comparables: Comparable[] = [];
   let used = params.title;
   let attempts = 0;
 
@@ -524,6 +672,7 @@ async function fetchActiveComparables(params: EbaySearchParams): Promise<Compara
     if (activeCategory) url.searchParams.set("category_ids", activeCategory);
 
     const res = await fetch(url, {
+      signal: params.signal,
       headers: {
         Authorization: `Bearer ${token}`,
         "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
@@ -536,11 +685,11 @@ async function fetchActiveComparables(params: EbaySearchParams): Promise<Compara
 
     const body = await res.json();
     attempts += 1;
-    data = body;
     used = query;
 
-    const count = (body as { itemSummaries?: unknown[] })?.itemSummaries?.length ?? 0;
-    if (count >= ENOUGH_RAW_RESULTS) break;
+    const observedAt = new Date().toISOString();
+    comparables = mergeComparables(comparables, mapBrowseResultsToComparables(body, params.referenceTitle || params.title, params.askingPrice).map(comp => ({ ...comp, observedAt })));
+    if (comparables.length >= ENOUGH_COMPARABLES) break;
   }
 
   if (attempts > 1) {
@@ -549,7 +698,7 @@ async function fetchActiveComparables(params: EbaySearchParams): Promise<Compara
 
   // Relevance is still judged against the full title, never the shortened
   // query — broadening decides what eBay is asked, not what counts as a match.
-  return mapBrowseResultsToComparables(data, params.title, params.askingPrice);
+  return comparables;
 }
 
 export async function fetchComparables(params: EbaySearchParams): Promise<Comparable[]> {

@@ -1,8 +1,9 @@
 import type { Application, Request, Response } from "express";
 import { analyzeDeal } from "./engine.js";
-import { fetchComparables } from "./ebay.js";
+import { fetchComparables, mergeComparables } from "./ebay.js";
 import type { Comparable, CostItem, DealCategory, DealInput } from "./types.js";
 import { isEbayConfigured } from "./env.js";
+import { valueVehicle } from './vehicle-valuation.js';
 
 const VALID_CATEGORIES: DealCategory[] = [
   "vehicle",
@@ -72,9 +73,9 @@ function parseHiddenCosts(value: unknown): CostItem[] {
 }
 
 // Supported merchandise should not silently terminate at zero comparables just
-// because the first eBay category or exact-title query is too narrow. Keep the
-// existing search untouched as attempt one, then broaden only after it returns
-// nothing. The pricing engine still receives the same Comparable shape and all
+// because the first eBay category or exact-title query is too narrow. Broaden
+// a thin sample while retaining the original item identity and earlier matches.
+// The pricing engine still receives the same Comparable shape and all
 // existing relevance/outlier/condition logic inside fetchComparables remains in
 // force. Firearms and jewelry never reach this route because they are excluded
 // before DealTough is called.
@@ -102,40 +103,68 @@ function comparableSearchTitles(title: string): string[] {
   return [...new Set([original, cleaned, family, brandAndType].filter((value) => value && value.length >= 3))];
 }
 
-async function fetchComparablesWithRecovery(params: {
+export async function fetchComparablesWithRecovery(params: {
   title: string;
   category: DealCategory;
   askingPrice?: number;
   limit?: number;
-}): Promise<{ comparables: Comparable[]; searchTitle: string; searchScope: "category" | "all"; attempts: number }> {
+}, search = fetchComparables, timeoutMs = 8000): Promise<{ comparables: Comparable[]; searchTitle: string; searchScope: "category" | "all"; attempts: number; partial?: boolean }> {
   const titles = comparableSearchTitles(params.title);
   let attempts = 0;
+  let comparables: Comparable[] = [];
+  let lastTitle = params.title;
+  let lastScope: "category" | "all" = "category";
+  const signal = AbortSignal.timeout(timeoutMs);
+  let partial = false;
+  async function lookup(args: Parameters<typeof fetchComparables>[0]): Promise<Comparable[]> {
+    if (signal.aborted) { partial = true; return []; }
+    let abort: () => void = () => {};
+    const deadline = new Promise<never>((_, reject) => {
+      abort = () => reject(signal.reason);
+      signal.addEventListener('abort', abort, { once: true });
+    });
+    try {
+      return await Promise.race([search({ ...args, signal }), deadline]);
+    } catch (error) {
+      if (signal.aborted || comparables.length) { partial = true; return []; }
+      throw error;
+    } finally { signal.removeEventListener('abort', abort); }
+  }
 
-  // Attempt one is intentionally identical to the historical behavior.
+  // Start with the original category query; broaden only for thin evidence.
   for (const searchTitle of titles) {
+    if (signal.aborted || partial) break;
+    lastTitle = searchTitle;
+    lastScope = "category";
     attempts += 1;
-    const scoped = await fetchComparables({
+    const scoped = await lookup({
       title: searchTitle,
+      referenceTitle: params.title,
       category: params.category,
       askingPrice: params.askingPrice,
       limit: params.limit,
     });
-    if (scoped.length) return { comparables: scoped, searchTitle, searchScope: "category", attempts };
+    comparables = mergeComparables(comparables, scoped);
+    if (comparables.length >= 5) return { comparables, searchTitle, searchScope: "category", attempts };
 
     // A valid item can live outside our coarse category map (safes are a good
-    // example). Only after the category-scoped search yields nothing do we let
+    // example). Only after the category-scoped sample remains thin do we let
     // eBay search all departments; fetchComparables still applies its relevance,
     // accessory, model-match and outlier protections.
+    if (signal.aborted || partial) break;
+    lastScope = "all";
     attempts += 1;
-    const unscoped = await fetchComparables({
+    const unscoped = await lookup({
       title: searchTitle,
+      referenceTitle: params.title,
       askingPrice: params.askingPrice,
       limit: params.limit,
     });
-    if (unscoped.length) return { comparables: unscoped, searchTitle, searchScope: "all", attempts };
+    comparables = mergeComparables(comparables, unscoped);
+    if (comparables.length >= 5) return { comparables, searchTitle, searchScope: "all", attempts };
   }
 
-  return { comparables: [], searchTitle: titles.at(-1) || params.title, searchScope: "all", attempts };
+  return { comparables, searchTitle: lastTitle, searchScope: lastScope, attempts, partial };
 }
 
 export function installMarketValueRoute(app: Application): void {
@@ -146,7 +175,7 @@ export function installMarketValueRoute(app: Application): void {
       return;
     }
     if (!rateLimit(req, res, trusted)) return;
-    if (!isEbayConfigured()) {
+    if (String(req.body?.category || '').trim().toLowerCase() !== 'vehicle' && !isEbayConfigured()) {
       res.status(503).json({ error: "Market-value comparables are not configured" });
       return;
     }
@@ -181,6 +210,11 @@ export function installMarketValueRoute(app: Application): void {
     }
 
     try {
+      if (category === 'vehicle') {
+        res.status(200).json(await valueVehicle({ title, condition, description, location, askingPrice,
+          vehicle: req.body?.vehicle && typeof req.body.vehicle === 'object' && !Array.isArray(req.body.vehicle) ? req.body.vehicle : {} }));
+        return;
+      }
       const comparableResult = await fetchComparablesWithRecovery({
         title,
         category: category as DealCategory,
@@ -193,12 +227,22 @@ export function installMarketValueRoute(app: Application): void {
           title,
           category,
           attempts: comparableResult.attempts,
+          partial: Boolean(comparableResult.partial),
           searchTitle: comparableResult.searchTitle,
           searchScope: comparableResult.searchScope,
           comparables: comparables.length,
         }));
       }
 
+      const soldComparables = comparables.filter((c) => c.sold).length;
+      const activeComparables = comparables.filter((c) => !c.sold).length;
+      const compBasis = soldComparables > 0 && activeComparables === 0
+        ? "sold"
+        : soldComparables > 0
+          ? "mixed"
+          : activeComparables > 0
+            ? "asking"
+            : "unknown";
       const engineAskingPrice = askingPrice ?? 1;
       const input: DealInput = {
         category: category as DealCategory,
@@ -244,10 +288,19 @@ export function installMarketValueRoute(app: Application): void {
         valuationBasis: recommendation.valuationBasis,
         confidencePercent: recommendation.confidencePercent,
         comparablesUsed: comparables.length,
-        soldComparables: comparables.filter((c) => c.sold).length,
-        activeComparables: comparables.filter((c) => !c.sold).length,
+        soldComparables,
+        activeComparables,
+        compBasis,
+        comparableEvidence: comparables.map(comp => ({
+          title: comp.title || null, price: comp.price, currency: 'USD',
+          condition: comp.condition || 'unknown', source: comp.source || null,
+          sourceId: comp.sourceId || null, url: comp.sourceUrl || null,
+          observedAt: comp.observedAt || null,
+          basis: comp.sold ? 'sold' : 'asking',
+        })),
         comparableSearch: {
           attempts: comparableResult.attempts,
+          partial: Boolean(comparableResult.partial),
           searchTitle: comparableResult.searchTitle,
           searchScope: comparableResult.searchScope,
         },

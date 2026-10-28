@@ -1,32 +1,39 @@
-# DealTough Private-Beta Release Checklist
+# DealTough Tester Invite Checklist
 
-Complete this checklist before inviting testers. This document is an operational checklist, not evidence that a control has been completed.
+For the owner, before inviting testers. Ticking a box here is a note to yourself, not
+proof that the step was done.
 
-## Product readiness
+## Product
 
-- [ ] The target build is identified by commit or release reference.
-- [ ] Core analysis flow has been exercised with representative inputs.
-- [ ] Request validation behavior matches `deal-input.schema.json`.
-- [ ] Example workflow runs in the intended environment.
-- [ ] Known limitations are reviewed and included in tester communication.
+- [ ] `https://dealtoughai.com/health` returns `ok: true` and the expected engine version.
+- [ ] The latest Railway deployment of the `dealtough` service is SUCCESS.
+- [ ] Paste Listing, Manual Entry, and Sell Something each run end to end on a real item.
+- [ ] A vehicle listing with a VIN returns a result for the correct year, make, and model.
+- [ ] `known-limitations.md` still matches how the product behaves.
 
-## Security and privacy
+## Tester access
 
-- [ ] No credentials, tokens, `.env` files, or production secrets are included in documentation, examples, logs, or the pull request.
-- [ ] Access is limited to explicitly invited testers.
-- [ ] Testers are instructed not to submit payment data or sensitive personal information.
-- [ ] Error reports and feedback are reviewed for redaction before sharing.
+- [ ] Each tester's exact email is added to `TESTER_EMAILS` on the Railway `dealtough`
+      service.
+- [ ] Each tester has signed up with that same email and sees the Plus allowance.
+- [ ] Testers have been told the site is public and that their analyses are saved to
+      their account.
 
-## Tester operations
+## Privacy
 
-- [ ] Testers receive the onboarding document and feedback template.
-- [ ] An owner is assigned for intake, triage, and tester support.
-- [ ] A channel exists for reporting blockers and unexpected behavior.
-- [ ] The pause/rollback decision-maker is identified.
+- [ ] Testers are told not to paste passwords, payment details, or other people's
+      personal information.
+- [ ] Feedback and screenshots are checked for personal data before they are shared.
+- [ ] No credentials or `.env` contents appear in any document, issue, or log excerpt.
 
-## Launch decision
+## Running the test
 
-- [ ] Open blockers are reviewed and accepted or resolved.
-- [ ] The invite cohort size and duration are set.
-- [ ] Success criteria and stop conditions are documented.
-- [ ] The beta owner approves sending invitations.
+- [ ] Testers have the tester guide and the feedback template.
+- [ ] There is one place for testers to send feedback and report problems.
+- [ ] The number of testers and the end date are set.
+- [ ] What counts as success, and what would make you stop, is written down.
+
+## Ending the test
+
+- [ ] Remove testers from `TESTER_EMAILS` when the test ends. This is a variable change
+      and takes effect without a redeploy; their accounts return to the free allowance.

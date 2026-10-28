@@ -1,46 +1,48 @@
-# DealTough Private-Beta Feedback Template
+# DealTough Tester Feedback
 
-Use one entry per evaluation or issue. Redact credentials, account identifiers, payment information, addresses, and any other sensitive data.
+Use one entry per item or issue. Leave out passwords, payment details, addresses, and
+other people's personal information.
 
 ## Context
 
-- Date and approximate time:
-- Tester identifier:
-- Environment and application version/commit:
-- Marketplace or data-source context:
+- Date and time:
+- Your name or tester email:
+- Device and browser:
+- Tab used: Paste Listing / Manual Entry / Sell Something
 
-## Item evaluated
+## Item
 
-- Item summary:
-- Asking price:
+- What it was:
+- Category DealTough picked (and whether it was right):
+- Asking price (or your intended selling price):
 - Condition and key details:
-- Shipping, tax, and expected fees considered:
-- Intended selling channel:
+- For vehicles: was a VIN included? Yes / No
+- What you believe it is really worth, and why:
 
 ## Result
 
-- Recommendation received:
-- Confidence or evidence notes shown:
+- Deal Score and verdict (or suggested list price for Sell Something):
+- Opening offer / target / walk-away prices shown:
+- Comparables shown (how many, and were they the right item?):
 - Did the explanation match the result? Yes / No / Partly
-- Would you act on this result after independent verification? Yes / No / Unsure
+- Would you act on this after checking it yourself? Yes / No / Unsure
 
-## Quality assessment
+## Quality
 
 - What was useful?
-- What was missing, unclear, or misleading?
-- Were comparables relevant and current enough?
-- Did any cost, condition, or policy assumption need correction?
+- What was missing, unclear, or wrong?
+- Any risk flag that was missing, or flagged when it should not have been?
 
-## Issue report, if applicable
+## Problem report, if any
 
 - Steps to reproduce:
-- Expected behavior:
-- Observed behavior:
-- Error message or redacted log excerpt:
+- What you expected:
+- What happened:
+- Error message or screenshot (personal data removed):
 - Severity: blocker / high / medium / low
 
-## Outcome follow-up
+## Follow-up
 
-- Purchase made? Yes / No
-- Actual outcome, if known:
-- Follow-up notes:
+- Did you buy or sell? Yes / No
+- Actual price, if known:
+- Notes:

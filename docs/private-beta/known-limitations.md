@@ -1,25 +1,51 @@
-# DealTough Private-Beta Known Limitations
+# DealTough Known Limitations
 
-DealTough is in private beta. Results should be treated as research assistance and must be independently checked before a purchase or resale decision.
+Treat every result as research assistance and check it yourself before buying or
+selling. These are the current, known limits — see "Honest limitations" in the
+repository `README.md` for the technical detail behind each.
 
-## Data and market uncertainty
+## Comparables are asking prices, not sold prices
 
-- Comparable listings and sales data can be incomplete, delayed, unavailable, misclassified, or unrepresentative of the item being evaluated.
-- Prices can change quickly due to condition, region, seasonality, supply, demand, listing quality, and buyer behavior.
-- Marketplace fees, taxes, shipping, returns, authentication, and policy requirements can materially change net proceeds.
+- eBay sold-price data is not available to DealTough, so comparables are **active
+  listings** — what sellers are asking, not what buyers paid.
+- The engine discounts active listings by up to 12% to approximate selling prices. That
+  figure is a calibration estimate, not a measurement. The result shows which kind of
+  comparables it used.
 
-## Input sensitivity
+## Item identification
 
-- Output quality depends on accurate item title, condition, variant, price, and cost assumptions.
-- Missing condition details or shipping costs may make an apparently favorable evaluation unsuitable.
-- Edge cases, unusual categories, bundles, restricted goods, and low-volume items may have insufficient evidence.
+- Results depend on DealTough identifying the right item. Generic titles pull noisy
+  comparables; relevance filtering removes the worst of them and lowers the reported
+  confidence rather than hiding the problem.
+- Some items are barely listed on eBay, or are outnumbered by their own parts and
+  accessories. When the remaining comparables are priced far below the asking price,
+  DealTough says so and halves its confidence.
+- With no usable comparables at all, the verdict is **Insufficient Data** rather than a
+  guess.
 
-## Operational constraints
+## Vehicles
 
-- External providers can throttle, change, or interrupt data access.
-- Errors, timeouts, and partial responses can occur; an incomplete result should not be interpreted as a negative or positive recommendation.
-- The beta experience, integrations, and output format may change without notice as defects are fixed and feedback is incorporated.
+- Vehicle comparables are thinner than electronics. Results are much better when the
+  listing includes a VIN, which is decoded to the exact year, make, model, and trim.
+- Where a VIN-specific dealer-listing value is available, it is used only when enough
+  listings back it; otherwise DealTough falls back to eBay comparables.
+- No result replaces a pre-purchase inspection or a vehicle history report.
+
+## Costs outside the listing
+
+- Taxes, shipping, marketplace fees, returns, repairs, and authentication can change what
+  a deal is really worth. Missing details can make a good-looking result wrong.
+
+## Operational
+
+- eBay and Anthropic can throttle or interrupt service. An error or partial result is
+  not a positive or negative verdict — rerun it or report it.
+- Listing analysis and Sell Something are each limited to 6 requests a minute per IP
+  address, and each account has a monthly analysis allowance.
+- Output format and features may change as feedback is incorporated.
 
 ## When to stop
 
-Do not proceed based solely on DealTough when evidence is sparse, item identity is uncertain, critical costs are missing, or the result conflicts with the underlying listing. Report the case with redacted details using the feedback template.
+Do not act on DealTough alone when the item is misidentified, confidence is low,
+comparables are few, critical costs are missing, or the result conflicts with the
+listing. Report the case using `feedback-template.md`.
